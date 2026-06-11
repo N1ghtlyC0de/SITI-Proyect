@@ -330,10 +330,12 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
             </div>
           )}
 
-          {/* Sales by hour Chart */}
-          <div className="rounded-card bg-card p-4 shadow-sm border border-border xl:col-span-12">
-            <h2 className="font-semibold mb-4">Ventas por hora</h2>
-            <div className="h-[240px] w-full">
+          {/* Charts Row */}
+          <div className="flex flex-col md:flex-row gap-4 xl:col-span-12 w-full">
+            {/* Sales by hour Chart */}
+            <div className={`rounded-card bg-card p-4 shadow-sm border border-border flex flex-col ${sales.length > 0 ? 'w-full md:w-1/2' : 'w-full'}`}>
+              <h2 className="font-semibold mb-4 shrink-0">Ventas por hora</h2>
+            <div className="flex-1 w-full min-h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={salesByHour} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -369,7 +371,7 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
 
           {/* Payment Methods Section */}
           {sales.length > 0 && (
-            <div className="rounded-card bg-card p-4 shadow-sm border border-border xl:col-span-8">
+            <div className="rounded-card bg-card p-4 shadow-sm border border-border w-full md:w-1/2 flex flex-col">
               <h2 className="font-semibold mb-4">Métodos de pago</h2>
 
               {/* Payment method counts */}
@@ -389,6 +391,7 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
                         axisLine={false}
                         tickLine={false}
                         tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+                        allowDecimals={false}
                       />
                       <Tooltip
                         cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
@@ -420,6 +423,7 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
               </div>
             </div>
           )}
+          </div>
 
         </div>
       </div>

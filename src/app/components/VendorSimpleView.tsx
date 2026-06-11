@@ -1,5 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from "react";
-import { LogOut } from "lucide-react";
+import { useState, useMemo, lazy, Suspense } from "react";
+import { Minus, Plus, Search, LogOut } from "lucide-react";
 import { Vendor } from "../App";
 import { SaleRow } from "./SaleRow";
 import { toast } from "sonner";
@@ -104,9 +104,9 @@ export function VendorSimpleView({
             aria-label="Sistema en línea"
           />
           <div>
-            <div className="text-sm font-bold leading-tight">Empanadas El Sabor</div>
+            <div className="text-sm font-bold leading-tight">SITI</div>
             <div className="text-xs opacity-90 leading-tight text-white">
-              {currentVendor.name} · {currentVendor.role}
+              Empanadas El Sabor · {currentVendor.name} · {currentVendor.role}
             </div>
           </div>
         </div>

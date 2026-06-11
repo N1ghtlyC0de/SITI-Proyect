@@ -167,10 +167,10 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
           />
           <div className="min-w-0 hidden sm:block">
             <div className="text-sm font-bold leading-tight truncate">
-              {businessName}
+              SITI
             </div>
             <div className="text-xs opacity-90 leading-tight text-white truncate">
-              {currentVendor.name}
+              {businessName} · {currentVendor.name}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { Vendor } from "../App";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import { StatusBadge } from "./molecules/StatusBadge";
 
 interface LoginScreenProps {
@@ -23,8 +24,8 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
         <div className="flex items-center gap-2">
           <div className="size-1.5 rounded-full" style={{ backgroundColor: "#4ADE80" }} />
           <div>
-            <div className="text-sm font-bold leading-tight">Empanadas El Sabor</div>
-            <div className="text-xs opacity-90 leading-tight text-white">Sistema de Información</div>
+            <div className="text-sm font-bold leading-tight">SITI</div>
+            <div className="text-xs opacity-90 leading-tight text-white">Empanadas El Sabor</div>
           </div>
         </div>
         <StatusBadge status="success" label="En línea" />

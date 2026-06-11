@@ -12,8 +12,7 @@ import {
   ArrowDown10,
   ArrowUp01,
   ChevronDown,
-  Minus,
-  ScanBarcode
+  Minus
 } from "lucide-react";
 import { HeaderNav } from "./HeaderNav";
 import { PrimaryButton } from "./molecules/PrimaryButton";
@@ -152,14 +151,7 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center justify-end gap-2 flex-1">
-          <button
-            className="bg-white/20 hover:bg-white/30 text-white rounded-lg p-1.5 aspect-square flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
-            type="button"
-            aria-label="Escanear código de barras"
-          >
-            <ScanBarcode className="size-5" aria-hidden="true" />
-          </button>
+        <div className="flex flex-1 justify-end">
           <PrimaryButton
             variant="header"
             onClick={handleCreateClick}
