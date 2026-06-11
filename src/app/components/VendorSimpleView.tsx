@@ -102,14 +102,14 @@ export function VendorSimpleView({
           />
           <div>
             <div className="text-sm font-bold leading-tight">Empanadas El Sabor</div>
-            <div className="text-xs opacity-70 leading-tight">
+            <div className="text-xs opacity-90 leading-tight text-white">
               {currentVendor.name} · {currentVendor.role}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <span className="bg-white/20 rounded-full px-2.5 py-1 text-xs font-medium">
+          <span className="bg-white/30 text-white rounded-full px-2.5 py-1 text-xs font-medium">
             En línea
           </span>
           <button

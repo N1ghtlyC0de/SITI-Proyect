@@ -23,10 +23,10 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
           <div className="size-1.5 rounded-full" style={{ backgroundColor: "#4ADE80" }} />
           <div>
             <div className="text-sm font-bold leading-tight">Empanadas El Sabor</div>
-            <div className="text-xs opacity-70 leading-tight">Sistema de Información</div>
+            <div className="text-xs opacity-90 leading-tight text-white">Sistema de Información</div>
           </div>
         </div>
-        <span className="bg-white/20 rounded-full px-2.5 py-1 text-xs font-medium">
+        <span className="bg-white/30 text-white rounded-full px-2.5 py-1 text-xs font-medium">
           En línea
         </span>
       </header>
@@ -36,7 +36,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
         <div className="text-center pt-4 pb-2">
           <div className="text-5xl mb-3" role="img" aria-label="Tienda">🏪</div>
           <h1 className="text-xl font-bold text-foreground">¿Quién eres hoy?</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-foreground/80 mt-1">
             Selecciona tu perfil para iniciar tu turno
           </p>
         </div>
@@ -44,7 +44,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
         {/* Admins */}
         {admins.length > 0 && (
           <div>
-            <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wider mb-2 px-1">
+            <p className="text-xs uppercase font-semibold text-foreground/80 tracking-wider mb-2 px-1">
               Administración
             </p>
             <div className="space-y-2">
@@ -79,7 +79,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
         {/* Sellers */}
         {sellers.length > 0 && (
           <div>
-            <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wider mb-2 px-1">
+            <p className="text-xs uppercase font-semibold text-foreground/80 tracking-wider mb-2 px-1">
               Vendedores
             </p>
             <div className="space-y-2">
