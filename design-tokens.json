@@ -1,0 +1,177 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "color": {
+    "primitives": {
+      "green": {
+        "600": { "value": "#2F6B3E", "type": "color" },
+        "700": { "value": "#236030", "type": "color" },
+        "50": { "value": "#F0FAF4", "type": "color" },
+        "100": { "value": "#E8F5EE", "type": "color" }
+      },
+      "red": {
+        "700": { "value": "#B71C1C", "type": "color" },
+        "50": { "value": "#FFEBEE", "type": "color" }
+      },
+      "amber": {
+        "700": { "value": "#E65100", "type": "color" },
+        "50": { "value": "#FFF3E0", "type": "color" }
+      },
+      "blue": {
+        "700": { "value": "#01579B", "type": "color" },
+        "50": { "value": "#E3F2FD", "type": "color" }
+      },
+      "gold": {
+        "500": { "value": "#C89A2E", "type": "color" },
+        "50": { "value": "#FFF8E1", "type": "color" }
+      },
+      "gray": {
+        "0": { "value": "#FAFAFA", "type": "color" },
+        "50": { "value": "#F4F4F2", "type": "color" },
+        "100": { "value": "#E8E8E5", "type": "color" },
+        "300": { "value": "#BDBDBA", "type": "color" },
+        "500": { "value": "#757572", "type": "color" },
+        "700": { "value": "#3D3D3B", "type": "color" },
+        "900": { "value": "#1A1A19", "type": "color" }
+      }
+    },
+    "action": {
+      "primary": { "value": "{color.primitives.green.600}", "type": "color" },
+      "primary-hover": { "value": "{color.primitives.green.700}", "type": "color" }
+    },
+    "surface": {
+      "default": { "value": "{color.primitives.gray.0}", "type": "color" },
+      "subtle": { "value": "{color.primitives.gray.50}", "type": "color" }
+    },
+    "text": {
+      "primary": { "value": "{color.primitives.gray.900}", "type": "color" },
+      "secondary": { "value": "{color.primitives.gray.500}", "type": "color" }
+    },
+    "status": {
+      "error": { "value": "{color.primitives.red.700}", "type": "color" },
+      "warning": { "value": "{color.primitives.amber.700}", "type": "color" },
+      "success": { "value": "{color.primitives.green.600}", "type": "color" }
+    }
+  },
+  "radius": {
+    "sm": { "value": "6px", "type": "dimension" },
+    "md": { "value": "10px", "type": "dimension" },
+    "lg": { "value": "14px", "type": "dimension" },
+    "xl": { "value": "18px", "type": "dimension" },
+    "pill": { "value": "9999px", "type": "dimension" }
+  },
+  "spacing": {
+    "1": { "value": "4px", "type": "dimension" },
+    "2": { "value": "8px", "type": "dimension" },
+    "3": { "value": "12px", "type": "dimension" },
+    "4": { "value": "16px", "type": "dimension" },
+    "5": { "value": "20px", "type": "dimension" },
+    "6": { "value": "24px", "type": "dimension" },
+    "8": { "value": "32px", "type": "dimension" },
+    "10": { "value": "40px", "type": "dimension" }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": { "value": "SF Pro, Inter, -apple-system, BlinkMacSystemFont, sans-serif", "type": "fontFamily" }
+    },
+    "fontWeight": {
+      "regular": { "value": "400", "type": "fontWeight" },
+      "semibold": { "value": "600", "type": "fontWeight" },
+      "bold": { "value": "700", "type": "fontWeight" }
+    },
+    "heading": {
+      "xl": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.bold}" },
+        "fontSize": { "value": "20px", "type": "dimension" },
+        "lineHeight": { "value": "1.2", "type": "number" },
+        "letterSpacing": { "value": "-0.3px", "type": "dimension" }
+      },
+      "lg": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.bold}" },
+        "fontSize": { "value": "18px", "type": "dimension" },
+        "lineHeight": { "value": "1.2", "type": "number" }
+      },
+      "md": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.semibold}" },
+        "fontSize": { "value": "16px", "type": "dimension" },
+        "lineHeight": { "value": "1.3", "type": "number" }
+      }
+    },
+    "body": {
+      "md": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.regular}" },
+        "fontSize": { "value": "14px", "type": "dimension" },
+        "lineHeight": { "value": "1.5", "type": "number" }
+      },
+      "sm": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.regular}" },
+        "fontSize": { "value": "12px", "type": "dimension" },
+        "lineHeight": { "value": "1.4", "type": "number" }
+      }
+    },
+    "label": {
+      "xs": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.semibold}" },
+        "fontSize": { "value": "10px", "type": "dimension" },
+        "lineHeight": { "value": "1.2", "type": "number" },
+        "letterSpacing": { "value": "0.4px", "type": "dimension" },
+        "textCase": { "value": "uppercase", "type": "string" }
+      }
+    },
+    "mono": {
+      "lg": {
+        "fontFamily": { "value": "{typography.fontFamily.sans}" },
+        "fontWeight": { "value": "{typography.fontWeight.bold}" },
+        "fontSize": { "value": "24px", "type": "dimension" },
+        "lineHeight": { "value": "1.2", "type": "number" },
+        "fontFeatureSettings": { "value": "'tnum' on", "type": "string" }
+      }
+    }
+  },
+  "shadow": {
+    "card": {
+      "value": [
+        {
+          "offsetX": "0",
+          "offsetY": "1px",
+          "blur": "4px",
+          "spread": "0",
+          "color": "rgba(0,0,0,0.08)"
+        },
+        {
+          "offsetX": "0",
+          "offsetY": "0",
+          "blur": "0",
+          "spread": "1px",
+          "color": "rgba(0,0,0,0.04)"
+        }
+      ],
+      "type": "shadow"
+    },
+    "hero": {
+      "value": {
+        "offsetX": "0",
+        "offsetY": "4px",
+        "blur": "16px",
+        "spread": "0",
+        "color": "rgba(47,107,62,0.35)"
+      },
+      "type": "shadow"
+    },
+    "sheet": {
+      "value": {
+        "offsetX": "0",
+        "offsetY": "-4px",
+        "blur": "32px",
+        "spread": "0",
+        "color": "rgba(0,0,0,0.18)"
+      },
+      "type": "shadow"
+    }
+  }
+}

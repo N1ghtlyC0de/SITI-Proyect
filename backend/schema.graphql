@@ -1,0 +1,27 @@
+type Post {
+  id: Int!
+  userId: Int!
+  title: String!
+  body: String!
+  createdAt: String!
+}
+
+input CreatePostInput {
+  userId: Int!
+  title: String!
+  body: String!
+}
+
+type Query {
+  posts(limit: Int!): [Post!]!
+}
+
+type Mutation {
+  createPost(input: CreatePostInput!): Post!
+  deletePost(id: Int!): Boolean!
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}
