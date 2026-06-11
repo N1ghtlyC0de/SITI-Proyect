@@ -1,54 +1,55 @@
+# SITI - Sistema de Información Informal
 
-  # 3 . Sistema de Información Informal (copia) (copia)
+SITI es una aplicación web moderna diseñada para la gestión de ventas, inventario en tiempo real, validación de caja y seguimiento de turnos. Construida con tecnologías modernas para ofrecer una experiencia rápida, responsiva y accesible.
 
-  This is a code bundle for 3 . Sistema de Información Informal (copia) (copia). The original project is available at https://www.figma.com/design/SeXF7oi1XttYO7m6010kvC/3-.-Sistema-de-Informaci%C3%B3n-Informal--copia---copia-.
+## Características Principales
 
-  ## Running the code
+- **Dashboard de Ventas**: Visualización en tiempo real de métricas clave (ingresos, costos, utilidades), gráficas de ventas por hora y desglose de métodos de pago.
+- **Inventario en Tiempo Real**: Gestión de productos, seguimiento de stock crítico, alertas de agotamiento y filtros avanzados.
+- **Validador de Caja**: Flujo de cierre de caja y validación de efectivo físico vs. esperado en sistema (soportando moneda local COP).
+- **Control de Turnos**: Gestión de apertura y cierre de turnos de vendedores, con historial detallado de transacciones.
+- **Accesibilidad (a11y)**: Diseño de alto contraste que cumple con las normativas WCAG, optimizado para lectores de pantalla y navegación por teclado.
 
-  Run `npm i` to install the dependencies.
+## Tecnologías Utilizadas
 
-  Run `npm run dev` to start the development server.
+- **Frontend**: React (con TypeScript)
+- **Build Tool**: Vite
+- **Estilos**: Tailwind CSS
+- **Gráficos**: Recharts
+- **Iconografía**: Lucide React
+- **Componentes UI**: Componentes a medida siguiendo la metodología atómica (Molecules/Atoms).
 
-  ## Backend configuration
+## Requisitos Previos
 
-  1. Copy `.env.example` to `.env`.
-  2. Choose API mode:
-     - REST: `VITE_API_MODE=rest`
-     - GraphQL: `VITE_API_MODE=graphql`
-  3. Set backend URL using `VITE_API_BASE_URL`.
+Asegúrate de tener instalado [Node.js](https://nodejs.org/) (versión 18 o superior recomendada).
 
-  Default `.env` points to the included backend (`http://localhost:4100`).
+## Instalación y Ejecución Local
 
-  ## Included real backend (REST + GraphQL)
+1. Clona el repositorio e instala las dependencias:
 
-  Run `npm run backend` to start backend API on `http://localhost:4100`.
+```bash
+npm install
+```
 
-  REST endpoints:
+2. Inicia el servidor de desarrollo local:
 
-  - `GET /health`
-  - `GET /posts?_limit=6`
-  - `POST /posts`
-  - `DELETE /posts/:id`
+```bash
+npm run dev
+```
 
-  GraphQL endpoint:
+La aplicación estará disponible típicamente en `http://localhost:5173`.
 
-  - `POST /graphql`
-  - Schema file: `backend/schema.graphql`
+## Construcción para Producción
 
-  Persistence:
+Para compilar la aplicación para producción, ejecuta:
 
-  - Posts are stored in SQLite: `backend/data/posts.db`
-  - New posts survive backend restarts
+```bash
+npm run build
+```
 
-  ## Local mock API (sin backend propio)
+Los archivos optimizados y listos para despliegue se generarán en la carpeta `dist/`.
 
-  Run `npm run mock:api` to start a local REST backend at `http://localhost:4000`.
+## Notas de Desarrollo
 
-  Available endpoints:
-
-  - `GET /health`
-  - `GET /posts?_limit=6`
-  - `POST /posts`
-
-  To use the mock API, update `.env` temporarily to `VITE_API_BASE_URL=http://localhost:4000`.
-  
+- Los íconos y componentes de estado (como los "Status Badges") están estandarizados para mantener una interfaz limpia y accesible en todos los módulos de la aplicación.
+- Se utiliza la internacionalización de la API de JavaScript (`Intl.NumberFormat`) para el correcto formateo de la moneda colombiana (COP).
