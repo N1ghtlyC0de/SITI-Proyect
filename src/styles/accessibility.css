@@ -1,0 +1,289 @@
+/**
+ * ESTILOS DE ACCESIBILIDAD - WCAG 2.1 AA
+ * Mejoras aplicadas automáticamente para cumplir estándares de accesibilidad
+ */
+
+@layer base {
+  /* ============================================
+     1. NAVEGACIÓN POR TECLADO - FOCUS STATES
+     ============================================ */
+
+  /* Focus visible mejorado para todos los elementos interactivos */
+  *:focus-visible {
+    outline: 3px solid #2F6B3E;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Focus states específicos para botones */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid #2F6B3E;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 4px rgba(47, 107, 62, 0.2);
+  }
+
+  /* Focus states para inputs */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid #2F6B3E;
+    outline-offset: 0;
+    border-color: #2F6B3E;
+    box-shadow: 0 0 0 3px rgba(47, 107, 62, 0.15);
+  }
+
+  /* ============================================
+     2. TAMAÑOS DE FUENTE ACCESIBLES
+     ============================================ */
+
+  /* Tamaños mínimos según WCAG */
+  :root {
+    /* Texto base: mínimo 16px */
+    --text-xs: 0.75rem;    /* 12px - Solo para labels secundarios */
+    --text-sm: 0.875rem;   /* 14px - Texto pequeño pero legible */
+    --text-base: 1rem;     /* 16px - Texto normal MÍNIMO */
+    --text-lg: 1.125rem;   /* 18px - Texto destacado */
+    --text-xl: 1.25rem;    /* 20px - Subtítulos pequeños */
+    --text-2xl: 1.5rem;    /* 24px - Subtítulos */
+    --text-3xl: 1.875rem;  /* 30px - Títulos */
+    --text-4xl: 2.25rem;   /* 36px - Títulos principales */
+  }
+
+  /* ============================================
+     3. CONTRASTE MEJORADO
+     ============================================ */
+
+  /* Textos con contraste mínimo 4.5:1 */
+  .text-muted {
+    color: #666666 !important; /* Mejor contraste que #9A9A96 */
+  }
+
+  .text-subtle {
+    color: #555555 !important; /* Para texto secundario */
+  }
+
+  /* ============================================
+     4. ESTADOS INTERACTIVOS CLAROS
+     ============================================ */
+
+  /* Hover states visibles */
+  button:hover:not(:disabled),
+  a:hover,
+  [role="button"]:hover {
+    transform: translateY(-1px);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  /* Estados deshabilitados claros */
+  button:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(30%);
+  }
+
+  /* ============================================
+     5. ÁREAS TÁCTILES MÍNIMAS (44x44px)
+     ============================================ */
+
+  button,
+  a,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+
+  /* Ajuste para botones pequeños pero manteniendo área táctil */
+  .btn-sm {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  /* ============================================
+     6. MENSAJES DE RETROALIMENTACIÓN
+     ============================================ */
+
+  /* Estados de éxito */
+  .feedback-success {
+    background-color: #E8F5EE;
+    border-left: 4px solid #2F6B3E;
+    color: #1A1A19;
+    padding: 16px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* Estados de error */
+  .feedback-error {
+    background-color: #FFEBEE;
+    border-left: 4px solid #B71C1C;
+    color: #1A1A19;
+    padding: 16px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* Estados de advertencia */
+  .feedback-warning {
+    background-color: #FFF3E0;
+    border-left: 4px solid #ED6C02;
+    color: #1A1A19;
+    padding: 16px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* Estados de información */
+  .feedback-info {
+    background-color: #E3F2FD;
+    border-left: 4px solid #1976D2;
+    color: #1A1A19;
+    padding: 16px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* ============================================
+     7. ANIMACIONES RESPETANDO PREFERENCIAS
+     ============================================ */
+
+  /* Reducir movimiento para usuarios con preferencias */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ============================================
+     8. LECTORES DE PANTALLA
+     ============================================ */
+
+  /* Clase para ocultar visualmente pero mantener accesible */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* ============================================
+     9. ENLACES Y NAVEGACIÓN
+     ============================================ */
+
+  /* Enlaces con indicador visual claro */
+  a:not([class*="btn"]) {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    color: #2F6B3E;
+  }
+
+  a:not([class*="btn"]):hover {
+    text-decoration-thickness: 3px;
+    color: #1F4A2B;
+  }
+
+  /* ============================================
+     10. SKIP LINKS (Saltar navegación)
+     ============================================ */
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #2F6B3E;
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-weight: 600;
+    z-index: 100;
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+}
+
+/* ============================================
+   11. UTILIDADES DE ACCESIBILIDAD
+   ============================================ */
+
+@layer utilities {
+  /* Texto con contraste garantizado */
+  .text-high-contrast {
+    color: #1A1A19;
+  }
+
+  /* Fondo con contraste garantizado */
+  .bg-high-contrast {
+    background-color: #FFFFFF;
+    color: #1A1A19;
+  }
+
+  /* Botón accesible primario */
+  .btn-accessible-primary {
+    background-color: #2F6B3E;
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 16px;
+    min-height: 44px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+  }
+
+  .btn-accessible-primary:hover:not(:disabled) {
+    background-color: #1F4A2B;
+    box-shadow: 0 4px 12px rgba(47, 107, 62, 0.3);
+  }
+
+  .btn-accessible-primary:focus-visible {
+    border-color: #1A1A19;
+    outline: 3px solid #2F6B3E;
+    outline-offset: 2px;
+  }
+
+  /* Botón accesible secundario */
+  .btn-accessible-secondary {
+    background-color: #FFFFFF;
+    color: #2F6B3E;
+    font-weight: 600;
+    font-size: 16px;
+    min-height: 44px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: 2px solid #2F6B3E;
+  }
+
+  .btn-accessible-secondary:hover:not(:disabled) {
+    background-color: #E8F5EE;
+  }
+
+  /* Espaciado táctil */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Texto legible garantizado */
+  .text-readable {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1A1A19;
+  }
+}

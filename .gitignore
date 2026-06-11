@@ -1,0 +1,12 @@
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Lighthouse audits and scripts
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+*.cjs

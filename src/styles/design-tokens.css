@@ -1,0 +1,147 @@
+/**
+ * Design System Tokens
+ * Sistema de Información para Trabajos Informales
+ *
+ * Documentation: See DESIGN_TOKENS.md
+ */
+
+:root {
+  /* ===== COLOR PRIMITIVES ===== */
+
+  /* Green */
+  --green-600: #2F6B3E;
+  --green-700: #236030;
+  --green-50: #F0FAF4;
+  --green-100: #E8F5EE;
+
+  /* Red */
+  --red-700: #B71C1C;
+  --red-50: #FFEBEE;
+
+  /* Amber */
+  --amber-700: #E65100;
+  --amber-50: #FFF3E0;
+
+  /* Blue */
+  --blue-700: #01579B;
+  --blue-50: #E3F2FD;
+
+  /* Gold */
+  --gold-500: #C89A2E;
+  --gold-50: #FFF8E1;
+
+  /* Gray Scale */
+  --gray-0: #FAFAFA;
+  --gray-50: #F4F4F2;
+  --gray-100: #E8E8E5;
+  --gray-300: #BDBDBA;
+  --gray-500: #757572;
+  --gray-700: #3D3D3B;
+  --gray-900: #1A1A19;
+
+  /* ===== SEMANTIC TOKENS ===== */
+
+  /* Action */
+  --color-action-primary: var(--green-600);
+  --color-action-primary-hover: var(--green-700);
+
+  /* Surface */
+  --color-surface-default: var(--gray-0);
+  --color-surface-subtle: var(--gray-50);
+
+  /* Text */
+  --color-text-primary: var(--gray-900);
+  --color-text-secondary: var(--gray-500);
+
+  /* Status */
+  --color-status-error: var(--red-700);
+  --color-status-warning: var(--amber-700);
+  --color-status-success: var(--green-600);
+
+  /* ===== BORDER RADIUS ===== */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 9999px;
+
+  /* ===== SHADOWS ===== */
+
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+  --shadow-hero: 0 4px 16px rgba(47,107,62,0.35);
+  --shadow-sheet: 0 -4px 32px rgba(0,0,0,0.18);
+
+  /* ===== SPACING ===== */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ===== TYPOGRAPHY ===== */
+
+  --font-sans: "SF Pro", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+/* ===== TEXT STYLES (as CSS classes) ===== */
+
+.text-heading-xl {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+}
+
+.text-heading-lg {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.text-heading-md {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.text-body-md {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-regular);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.text-body-sm {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-regular);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.text-label-xs {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-semibold);
+  font-size: 10px;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.text-mono-lg {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-bold);
+  font-size: 24px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}

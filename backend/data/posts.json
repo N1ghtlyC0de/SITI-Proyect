@@ -1,0 +1,23 @@
+[
+  {
+    "id": 3,
+    "userId": 7,
+    "title": "Persist test",
+    "body": "Este post valida persistencia local de datos.",
+    "createdAt": "2026-05-31T18:44:06.781Z"
+  },
+  {
+    "id": 1,
+    "userId": 1,
+    "title": "Apertura del punto",
+    "body": "Caja inicial confirmada y listado de productos verificado.",
+    "createdAt": "2026-05-31T00:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "title": "Movimiento de media manana",
+    "body": "Se registran ventas estables y flujo continuo de clientes.",
+    "createdAt": "2026-05-31T00:05:00.000Z"
+  }
+]
