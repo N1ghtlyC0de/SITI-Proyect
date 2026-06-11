@@ -1,15 +1,22 @@
-import { ReactNode, useState } from "react";
-import { VendorHome } from "./components/VendorHome";
-import { VendorSimpleView } from "./components/VendorSimpleView";
-import { LoginScreen } from "./components/LoginScreen";
-import { NewSale } from "./components/NewSale";
-import { SalesDashboard } from "./components/SalesDashboard";
-import { InventoryDashboard } from "./components/InventoryDashboard";
-import { ShiftsDashboard } from "./components/ShiftsDashboard";
-import { SalesHistory } from "./components/SalesHistory";
-import { ProfileManagement } from "./components/ProfileManagement";
+import { ReactNode, useState, Suspense, lazy } from "react";
 import { Toaster } from "./components/ui/sonner";
-import { ApiIntegrationPage } from "./components/pages/ApiIntegrationPage";
+
+const VendorHome = lazy(() => import("./components/VendorHome").then(m => ({ default: m.VendorHome })));
+const VendorSimpleView = lazy(() => import("./components/VendorSimpleView").then(m => ({ default: m.VendorSimpleView })));
+const LoginScreen = lazy(() => import("./components/LoginScreen").then(m => ({ default: m.LoginScreen })));
+const NewSale = lazy(() => import("./components/NewSale").then(m => ({ default: m.NewSale })));
+const SalesDashboard = lazy(() => import("./components/SalesDashboard").then(m => ({ default: m.SalesDashboard })));
+const InventoryDashboard = lazy(() => import("./components/InventoryDashboard").then(m => ({ default: m.InventoryDashboard })));
+const ShiftsDashboard = lazy(() => import("./components/ShiftsDashboard").then(m => ({ default: m.ShiftsDashboard })));
+const SalesHistory = lazy(() => import("./components/SalesHistory").then(m => ({ default: m.SalesHistory })));
+const ProfileManagement = lazy(() => import("./components/ProfileManagement").then(m => ({ default: m.ProfileManagement })));
+const ApiIntegrationPage = lazy(() => import("./components/pages/ApiIntegrationPage").then(m => ({ default: m.ApiIntegrationPage })));
+
+const LoadingFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-muted">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
 
 type AdminScreen =
   | "home"
@@ -153,7 +160,11 @@ export default function App() {
       <a href="#main-content" className="skip-link">
         Saltar al contenido principal
       </a>
-      <main id="main-content">{content}</main>
+      <main id="main-content">
+        <Suspense fallback={<LoadingFallback />}>
+          {content}
+        </Suspense>
+      </main>
       <Toaster />
     </>
   );

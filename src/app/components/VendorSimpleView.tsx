@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { LogOut } from "lucide-react";
 import { Vendor } from "../App";
 import { SaleRow } from "./SaleRow";
-import { SaleDetailSheet } from "./SaleDetailSheet";
-import { CloseShiftSheet } from "./CloseShiftSheet";
-import { PostShiftScreen } from "./PostShiftScreen";
 import { toast } from "sonner";
+
+const SaleDetailSheet = lazy(() => import("./SaleDetailSheet").then(m => ({ default: m.SaleDetailSheet })));
+const CloseShiftSheet = lazy(() => import("./CloseShiftSheet").then(m => ({ default: m.CloseShiftSheet })));
+const PostShiftScreen = lazy(() => import("./PostShiftScreen").then(m => ({ default: m.PostShiftScreen })));
 
 interface VendorSimpleViewProps {
   sales: any[];
@@ -75,13 +76,15 @@ export function VendorSimpleView({
 
   if (postShiftData) {
     return (
-      <PostShiftScreen
-        previousVendor={postShiftData.previousVendor}
-        nextVendor={postShiftData.nextVendor}
-        validSales={myValidSales}
-        durationString={postShiftData.durationString}
-        onContinue={handlePostShiftContinue}
-      />
+      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div></div>}>
+        <PostShiftScreen
+          previousVendor={postShiftData.previousVendor}
+          nextVendor={postShiftData.nextVendor}
+          validSales={myValidSales}
+          durationString={postShiftData.durationString}
+          onContinue={handlePostShiftContinue}
+        />
+      </Suspense>
     );
   }
 
@@ -227,28 +230,30 @@ export function VendorSimpleView({
         </button>
       </div>
 
-      {showCloseShiftSheet && (
-        <CloseShiftSheet
-          currentVendor={currentVendor}
-          vendors={vendors}
-          validSales={myValidSales}
-          durationString={durationString}
-          pendingOfflineSales={0}
-          onClose={() => setShowCloseShiftSheet(false)}
-          onConfirm={handleConfirmCloseShift}
-        />
-      )}
+      <Suspense fallback={null}>
+        {showCloseShiftSheet && (
+          <CloseShiftSheet
+            currentVendor={currentVendor}
+            vendors={vendors}
+            validSales={myValidSales}
+            durationString={durationString}
+            pendingOfflineSales={0}
+            onClose={() => setShowCloseShiftSheet(false)}
+            onConfirm={handleConfirmCloseShift}
+          />
+        )}
 
-      {selectedSale && (
-        <SaleDetailSheet
-          sale={selectedSale}
-          onClose={() => setSelectedSale(null)}
-          onCancel={(saleId) => {
-            onCancelSale(saleId);
-            setSelectedSale(null);
-          }}
-        />
-      )}
+        {selectedSale && (
+          <SaleDetailSheet
+            sale={selectedSale}
+            onClose={() => setSelectedSale(null)}
+            onCancel={(saleId) => {
+              onCancelSale(saleId);
+              setSelectedSale(null);
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

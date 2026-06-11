@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Lock, LogOut } from "lucide-react";
 import { formatCurrency } from "../lib/utils";
-import { VendorSwitcher } from "./VendorSwitcher";
 import { SaleRow } from "./SaleRow";
-import { BottomNav } from "./BottomNav";
-import { SaleDetailSheet } from "./SaleDetailSheet";
-import { CloseShiftSheet } from "./CloseShiftSheet";
-import { PostShiftScreen } from "./PostShiftScreen";
+import { HeaderNav } from "./HeaderNav";
+import { StatusBadge } from "./molecules/StatusBadge";
 import { toast } from "sonner";
+
+const VendorSwitcher = lazy(() => import("./VendorSwitcher").then(m => ({ default: m.VendorSwitcher })));
+const SaleDetailSheet = lazy(() => import("./SaleDetailSheet").then(m => ({ default: m.SaleDetailSheet })));
+const CloseShiftSheet = lazy(() => import("./CloseShiftSheet").then(m => ({ default: m.CloseShiftSheet })));
+const PostShiftScreen = lazy(() => import("./PostShiftScreen").then(m => ({ default: m.PostShiftScreen })));
 
 interface Vendor {
   id: string;
@@ -136,13 +138,15 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
 
   if (postShiftData) {
     return (
-      <PostShiftScreen
-        previousVendor={postShiftData.previousVendor}
-        nextVendor={postShiftData.nextVendor}
-        validSales={validSales}
-        durationString={postShiftData.durationString}
-        onContinue={handlePostShiftContinue}
-      />
+      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div></div>}>
+        <PostShiftScreen
+          previousVendor={postShiftData.previousVendor}
+          nextVendor={postShiftData.nextVendor}
+          validSales={validSales}
+          durationString={postShiftData.durationString}
+          onContinue={handlePostShiftContinue}
+        />
+      </Suspense>
     );
   }
 
@@ -150,54 +154,55 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
     <div className="flex min-h-screen flex-col bg-muted" style={{ width: "100%" }}>
       {/* 1. Status Bar */}
       <header
-        className="sticky top-0 z-30 flex items-center justify-between px-4 bg-primary text-primary-foreground flex-shrink-0"
-        style={{ height: "52px" }}
+        className="sticky top-0 z-30 flex items-center justify-between px-4 bg-primary text-primary-foreground flex-shrink-0 w-full"
+        style={{ height: "64px" }}
       >
-        <div className="flex items-center gap-1.5">
+        {/* Left Section */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <div
-            className="size-1.5 rounded-full"
+            className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: "#4ADE80" }}
             role="status"
             aria-label="Sistema en línea"
           />
-          <div>
-            <div className="text-sm font-bold leading-tight">
+          <div className="min-w-0 hidden sm:block">
+            <div className="text-sm font-bold leading-tight truncate">
               {businessName}
             </div>
-            <div className="text-xs opacity-90 leading-tight text-white">
-              {currentVendor.name} · {currentVendor.role}
+            <div className="text-xs opacity-90 leading-tight text-white truncate">
+              {currentVendor.name}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="bg-white/30 text-white rounded-full px-2.5 py-1 text-xs font-medium">
-            En línea
-          </span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              cajaAbierta
-                ? "bg-white/20 text-white"
-                : "bg-destructive/25 text-destructive-foreground"
-            }`}
-            role="status"
+        {/* Center Section - Navigation */}
+        <div className="flex justify-center shrink-0 mx-2">
+          <HeaderNav active="home" onNavigate={onNavigate} />
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center justify-end gap-1.5 flex-1">
+          <StatusBadge status="success" label="En línea" className="hidden lg:inline-flex" />
+          <StatusBadge 
+            status={cajaAbierta ? "success" : "error"} 
+            label={cajaAbierta ? "Caja abierta" : "Caja cerrada"} 
+            className="hidden lg:inline-flex"
             aria-label={cajaAbierta ? "Caja abierta" : "Caja cerrada"}
-          >
-            {cajaAbierta ? "Caja abierta" : "Caja cerrada"}
-          </span>
+            role="status"
+          />
           <button
             onClick={onLogout}
-            className="p-1.5 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
             aria-label="Cerrar sesión"
             type="button"
           >
-            <LogOut className="size-4" aria-hidden="true" />
+            <LogOut className="size-5" aria-hidden="true" />
           </button>
         </div>
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto pb-10 pt-14">
+      <div className="flex-1 overflow-auto pb-10 pt-0">
         {/* 2. Hero Button */}
         <div className="mx-4 my-3.5">
           <button
@@ -499,45 +504,45 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
         )}
       </div>
 
-      <BottomNav active="home" onNavigate={onNavigate} />
+      <Suspense fallback={null}>
+        {showCloseShiftSheet && (
+          <CloseShiftSheet
+            currentVendor={currentVendor}
+            vendors={vendors}
+            validSales={validSales}
+            durationString={durationString}
+            // Mock 2 pending offline sales for demonstration, normally this would come from real offline store.
+            pendingOfflineSales={2} 
+            onClose={() => setShowCloseShiftSheet(false)}
+            onConfirm={handleConfirmCloseShift}
+          />
+        )}
 
-      {showCloseShiftSheet && (
-        <CloseShiftSheet
-          currentVendor={currentVendor}
-          vendors={vendors}
-          validSales={validSales}
-          durationString={durationString}
-          // Mock 2 pending offline sales for demonstration, normally this would come from real offline store.
-          pendingOfflineSales={2} 
-          onClose={() => setShowCloseShiftSheet(false)}
-          onConfirm={handleConfirmCloseShift}
-        />
-      )}
+        {showVendorSwitcher && (
+          <VendorSwitcher
+            vendors={vendors}
+            currentVendorId={currentVendor.id}
+            currentVendorName={currentVendor.name}
+            onSelect={handleVendorSelect}
+            onManageProfiles={() => {
+              setShowVendorSwitcher(false);
+              onManageProfiles?.();
+            }}
+            onClose={() => setShowVendorSwitcher(false)}
+          />
+        )}
 
-      {showVendorSwitcher && (
-        <VendorSwitcher
-          vendors={vendors}
-          currentVendorId={currentVendor.id}
-          currentVendorName={currentVendor.name}
-          onSelect={handleVendorSelect}
-          onManageProfiles={() => {
-            setShowVendorSwitcher(false);
-            onManageProfiles?.();
-          }}
-          onClose={() => setShowVendorSwitcher(false)}
-        />
-      )}
-
-      {selectedSale && (
-        <SaleDetailSheet
-          sale={selectedSale}
-          onClose={() => setSelectedSale(null)}
-          onCancel={(saleId) => {
-            onCancelSale?.(saleId);
-            setSelectedSale(null);
-          }}
-        />
-      )}
+        {selectedSale && (
+          <SaleDetailSheet
+            sale={selectedSale}
+            onClose={() => setSelectedSale(null)}
+            onCancel={(saleId) => {
+              onCancelSale?.(saleId);
+              setSelectedSale(null);
+            }}
+          />
+        )}
+      </Suspense>
 
     </div>
   );

@@ -10,7 +10,7 @@ import {
   LogOut,
   X
 } from "lucide-react";
-import { BottomNav } from "./BottomNav";
+import { HeaderNav } from "./HeaderNav";
 
 interface ShiftsDashboardProps {
   onNavigate?: (id: string) => void;
@@ -128,19 +128,28 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   return (
     <div className="flex min-h-screen flex-col" style={{ backgroundColor: "#F4F4F2", width: "100%" }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between p-4" style={{ backgroundColor: "#2F6B3E", height: "52px", color: "white" }}>
-        <div className="flex items-center gap-3">
+      <div className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between px-4 w-full" style={{ backgroundColor: "#2F6B3E", height: "64px", color: "white" }}>
+        {/* Left Section */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button 
             onClick={() => onNavigate?.("home")}
-            className="rounded-full p-1 transition-colors hover:bg-white/20"
+            className="rounded-full p-1 transition-colors hover:bg-white/20 shrink-0"
           >
             <ArrowLeft className="size-5" />
           </button>
-          <h1 className="text-lg font-semibold tracking-tight">Registro de Turnos</h1>
+          <h1 className="text-lg font-semibold tracking-tight truncate hidden sm:block">Registro de Turnos</h1>
         </div>
+        
+        {/* Center Section - Navigation */}
+        <div className="flex justify-center shrink-0 mx-2">
+          <HeaderNav active="shifts" onNavigate={onNavigate} />
+        </div>
+
+        {/* Right Section */}
+        <div className="flex flex-1" />
       </div>
 
-      <div className="flex-1 overflow-auto pb-6 pt-14">
+      <div className="flex-1 overflow-auto pb-6 pt-0">
         <div className="mx-auto w-full max-w-6xl space-y-6 p-4">
           
           <div className="rounded-card bg-card p-6 shadow-sm border border-border text-center">
@@ -272,7 +281,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         </div>
       </div>
       
-      <BottomNav active="shifts" onNavigate={onNavigate} />
+
 
       {alertMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">

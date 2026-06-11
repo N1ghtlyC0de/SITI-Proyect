@@ -23,7 +23,8 @@ import {
   Calculator
 } from "lucide-react";
 import { formatCurrency } from "../lib/utils";
-import { BottomNav } from "./BottomNav";
+import { HeaderNav } from "./HeaderNav";
+import { PrimaryButton } from "./molecules/PrimaryButton";
 import { KPICard } from "./molecules/KPICard";
 import { Modal } from "./molecules/Modal";
 
@@ -154,31 +155,42 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
     <div className="flex min-h-screen flex-col bg-muted" style={{ width: "100%" }}>
       {/* Header */}
       <header
-        className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between p-4 bg-primary text-primary-foreground shadow-sm"
-        style={{ height: "52px" }}
+        className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between px-4 bg-primary text-primary-foreground shadow-sm w-full"
+        style={{ height: "64px" }}
       >
-        <div className="flex items-center gap-3">
+        {/* Left Section */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             onClick={() => onNavigate?.("home")}
-            className="rounded-full p-1 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="rounded-full p-1 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
             aria-label="Volver al inicio"
             type="button"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </button>
-          <h1 className="text-lg font-semibold tracking-tight">Dashboard de Ventas</h1>
+          <h1 className="text-lg font-semibold tracking-tight truncate hidden sm:block">Dashboard de Ventas</h1>
         </div>
-        <button
-          onClick={() => setShowValidator(true)}
-          className="rounded-lg bg-white/20 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
-          type="button"
-          aria-label="Ir al Validador de caja"
-        >
-          Validador
-        </button>
+
+        {/* Center Section - Navigation */}
+        <div className="flex justify-center shrink-0 mx-2">
+          <HeaderNav active="sales" onNavigate={onNavigate} />
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center justify-end gap-2 flex-1">
+          <button
+            onClick={() => setShowValidator(true)}
+            className="rounded-lg bg-white/20 px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
+            type="button"
+            aria-label="Ir al Validador de caja"
+          >
+            <Calculator className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Validador</span>
+          </button>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-auto pb-6 pt-14">
+      <div className="flex-1 overflow-auto pb-6 pt-0">
         <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-12">
 
           {/* Main Financial KPIs */}
@@ -426,21 +438,25 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
 
           <div>
             <label htmlFor="cash-in-register" className="mb-2 block text-sm font-medium text-muted-foreground">
-              Efectivo en caja
+              Efectivo Físico
             </label>
-            <input
-              id="cash-in-register"
-              type="number"
-              min="0"
-              value={cashInRegister}
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                if (val < 0) return;
-                setCashInRegister(e.target.value);
-              }}
-              placeholder="0"
-              className="w-full rounded-lg border border-border bg-background px-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground pointer-events-none">
+                $
+              </span>
+              <input
+                id="cash-in-register"
+                type="text"
+                inputMode="numeric"
+                value={cashInRegister ? new Intl.NumberFormat('es-CO').format(parseInt(cashInRegister, 10)) : ""}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/\D/g, '');
+                  setCashInRegister(rawValue);
+                }}
+                placeholder="0"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
@@ -448,14 +464,14 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
             <span className="text-sm font-bold">{formatCurrency(totalCashExpected)}</span>
           </div>
 
-          <button
+          <PrimaryButton
             onClick={handleValidateCash}
             disabled={!cashInRegister}
-            className="w-full rounded-lg bg-primary px-6 py-3 font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+            className="w-full px-6 py-3"
             type="button"
           >
             Validar caja
-          </button>
+          </PrimaryButton>
         </div>
       </Modal>
 
@@ -539,7 +555,7 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
         </div>
       </Modal>
 
-      <BottomNav active="sales" onNavigate={onNavigate} />
+
     </div>
   );
 }

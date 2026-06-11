@@ -6,11 +6,27 @@ import {
   AlertTriangle,
   Edit,
   Plus,
-  Trash2
+  Trash2,
+  ArrowDownAZ,
+  ArrowUpZA,
+  ArrowDown10,
+  ArrowUp01,
+  ChevronDown,
+  Minus,
+  ScanBarcode
 } from "lucide-react";
-import { BottomNav } from "./BottomNav";
+import { HeaderNav } from "./HeaderNav";
+import { PrimaryButton } from "./molecules/PrimaryButton";
+import { StatusChip } from "./molecules/StatusChip";
 import { formatCurrency } from "../lib/utils";
 import { Modal } from "./molecules/Modal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface Product {
   id: string;
@@ -33,14 +49,34 @@ interface InventoryDashboardProps {
 
 export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct, onAddProduct, onDeleteProduct }: InventoryDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [filterStatus, setFilterStatus] = useState<"all" | "escasos" | "agotados">("all");
+  
+  type EditingProduct = Omit<Product, "stock" | "price"> & { stock: string | number; price: string | number };
+  const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(null);
+  
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-  const filteredProducts = inventory.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = inventory.filter(p => {
+    if (filterStatus === "escasos") {
+      if (p.status !== "warning" && p.status !== "critical" && p.stock !== 0) return false;
+      if (p.stock === 0) return false; // Agotados aren't just "escasos"
+    }
+    if (filterStatus === "agotados" && p.stock !== 0) return false;
+
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.category.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case "name-asc": return a.name.localeCompare(b.name);
+      case "name-desc": return b.name.localeCompare(a.name);
+      case "stock-asc": return a.stock - b.stock;
+      case "stock-desc": return b.stock - a.stock;
+      default: return 0;
+    }
+  });
 
   const handleEditClick = (product: Product) => {
     setEditingProduct({ ...product });
@@ -52,10 +88,10 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
       id: "",
       name: "",
       category: "",
-      stock: 0,
+      stock: "",
       status: "good",
       image: "",
-      price: 0,
+      price: "",
       emoji: "📦"
     });
     setIsCreatingNew(true);
@@ -68,13 +104,17 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
       onAddProduct?.({
         name: editingProduct.name,
         category: editingProduct.category,
-        stock: editingProduct.stock,
+        stock: Number(editingProduct.stock) || 0,
         image: editingProduct.image,
-        price: editingProduct.price,
+        price: Number(editingProduct.price) || 0,
         emoji: editingProduct.emoji
       });
     } else {
-      onUpdateProduct?.(editingProduct.id, editingProduct);
+      onUpdateProduct?.(editingProduct.id, {
+        ...editingProduct,
+        stock: Number(editingProduct.stock) || 0,
+        price: Number(editingProduct.price) || 0
+      } as Product);
     }
 
     setEditingProduct(null);
@@ -90,32 +130,48 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
     <div className="flex min-h-screen flex-col bg-muted" style={{ width: "100%" }}>
       {/* Header */}
       <header
-        className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between p-4 bg-primary text-primary-foreground shadow-sm"
-        style={{ height: "52px" }}
+        className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between px-4 bg-primary text-primary-foreground shadow-sm w-full"
+        style={{ height: "64px" }}
       >
-        <div className="flex items-center gap-3">
+        {/* Left Section */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             onClick={() => onNavigate?.("home")}
-            className="rounded-full p-1 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="rounded-full p-1 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
             aria-label="Volver al inicio"
             type="button"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
           </button>
-          <h1 className="text-lg font-semibold tracking-tight">Inventario en tiempo real</h1>
+          <h1 className="text-lg font-semibold tracking-tight truncate hidden sm:block">Inventario en tiempo real</h1>
         </div>
-        <button
-          onClick={handleCreateClick}
-          className="bg-white/20 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50"
-          type="button"
-          aria-label="Agregar nuevo producto"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Agregar
-        </button>
+
+        {/* Center Section - Navigation */}
+        <div className="flex justify-center shrink-0 mx-2">
+          <HeaderNav active="inventory" onNavigate={onNavigate} />
+        </div>
+
+        {/* Right Section */}
+        <div className="flex items-center justify-end gap-2 flex-1">
+          <button
+            className="bg-white/20 hover:bg-white/30 text-white rounded-lg p-1.5 aspect-square flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
+            type="button"
+            aria-label="Escanear código de barras"
+          >
+            <ScanBarcode className="size-5" aria-hidden="true" />
+          </button>
+          <PrimaryButton
+            variant="header"
+            onClick={handleCreateClick}
+            icon={<Plus aria-hidden="true" />}
+            aria-label="Agregar nuevo producto"
+          >
+            <span className="hidden sm:inline">Nuevo Producto</span>
+          </PrimaryButton>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-auto pb-6 pt-14">
+      <div className="flex-1 overflow-auto pb-6 pt-0">
         <div className="mx-auto w-full max-w-6xl space-y-4 p-4">
           
           <div className="rounded-card bg-card p-4 shadow-sm border border-border flex gap-4">
@@ -128,66 +184,146 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
               <p className="text-2xl font-bold text-warning">{inventory.filter(p => p.status === "warning" || p.status === "critical").length}</p>
               <p className="text-xs text-muted-foreground">Por agotarse</p>
             </div>
+            <div className="w-px bg-border"></div>
+            <div className="flex-1 text-center">
+              <p className="text-2xl font-bold text-destructive">{inventory.filter(p => p.stock === 0).length}</p>
+              <p className="text-xs text-muted-foreground">Agotados</p>
+            </div>
           </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <label htmlFor="search-inventory" className="sr-only">
-              Buscar producto o categoría
-            </label>
-            <input
-              id="search-inventory"
-              type="text"
-              placeholder="Buscar producto o categoría..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-border bg-card py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <label htmlFor="search-inventory" className="sr-only">
+                Buscar producto o categoría
+              </label>
+              <input
+                id="search-inventory"
+                type="text"
+                placeholder="Buscar producto o categoría..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-border bg-card py-2.5 pl-9 pr-4 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]"
+              />
+            </div>
+            <div className="sm:w-48 shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="w-full flex items-center justify-between rounded-lg border border-border bg-card py-2.5 px-3 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]">
+                  <span className="flex items-center gap-2">
+                    {sortBy === "name-asc" && <ArrowDownAZ className="size-4 text-muted-foreground" />}
+                    {sortBy === "name-desc" && <ArrowUpZA className="size-4 text-muted-foreground" />}
+                    {sortBy === "stock-asc" && <ArrowDown10 className="size-4 text-muted-foreground" />}
+                    {sortBy === "stock-desc" && <ArrowUp01 className="size-4 text-muted-foreground" />}
+                    {sortBy === "name-asc" ? "Nombre (A-Z)" :
+                     sortBy === "name-desc" ? "Nombre (Z-A)" :
+                     sortBy === "stock-asc" ? "Stock (Menor a Mayor)" :
+                     "Stock (Mayor a Menor)"}
+                  </span>
+                  <ChevronDown className="size-4 text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
+                    <DropdownMenuRadioItem value="name-asc" className="cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ArrowDownAZ className="size-4" />
+                        <span>Nombre (A-Z)</span>
+                      </div>
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="name-desc" className="cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpZA className="size-4" />
+                        <span>Nombre (Z-A)</span>
+                      </div>
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="stock-asc" className="cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ArrowDown10 className="size-4" />
+                        <span>Stock (Menor a Mayor)</span>
+                      </div>
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="stock-desc" className="cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <ArrowUp01 className="size-4" />
+                        <span>Stock (Mayor a Menor)</span>
+                      </div>
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
+            <StatusChip
+              status="neutral"
+              isActive={filterStatus === "all"}
+              onClick={() => setFilterStatus("all")}
+            >
+              Todos
+            </StatusChip>
+            <StatusChip
+              status="warning"
+              isActive={filterStatus === "escasos"}
+              onClick={() => setFilterStatus("escasos")}
+            >
+              Escasos
+            </StatusChip>
+            <StatusChip
+              status="error"
+              isActive={filterStatus === "agotados"}
+              onClick={() => setFilterStatus("agotados")}
+            >
+              Agotados
+            </StatusChip>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex items-center gap-4 rounded-card bg-card p-3 shadow-sm border border-border"
+                className={`flex items-center gap-4 p-3.5 border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
+                  product.status === "critical"
+                    ? "border-destructive/50 hover:border-destructive bg-destructive/5"
+                    : product.status === "warning"
+                    ? "border-warning/50 hover:border-warning bg-warning/5"
+                    : "border-border hover:border-foreground/20 bg-card"
+                }`}
               >
-                <div style={{ fontSize: "32px" }}>{product.emoji || "📦"}</div>
+                <div style={{ fontSize: "32px" }} className="leading-none shrink-0">{product.emoji || "📦"}</div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{product.name}</h3>
-                  <span className="text-xs text-muted-foreground">{product.category}</span>
-                  <div className="text-xs font-semibold" style={{ color: "#2F6B3E", marginTop: "2px" }}>
-                    {formatCurrency(product.price)}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="flex items-center gap-1 justify-end">
-                    {product.status === "critical" && <AlertTriangle className="size-4 text-destructive" />}
-                    {product.status === "warning" && <AlertTriangle className="size-4 text-warning" />}
-                    <span className={`text-xl font-bold tabular-nums ${
-                      product.status === "critical" ? "text-destructive" :
-                      product.status === "warning" ? "text-warning" : "text-foreground"
-                    }`}>
-                      {product.stock}
+                  <h3 className="font-semibold text-base truncate leading-tight">{product.name}</h3>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-sm font-semibold" style={{ color: "#2F6B3E" }}>
+                      {formatCurrency(product.price)}
                     </span>
+                    <div className="flex items-center gap-1.5">
+                      {product.status === "critical" && <AlertTriangle className="size-4 text-destructive" />}
+                      {product.status === "warning" && <AlertTriangle className="size-4 text-warning" />}
+                      <span className="text-xs font-medium text-muted-foreground mr-0.5">Stock:</span>
+                      <span className={`text-base font-bold tabular-nums leading-none ${
+                        product.status === "critical" ? "text-destructive" :
+                        product.status === "warning" ? "text-warning" : "text-foreground"
+                      }`}>
+                        {product.stock}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-muted-foreground">unidades</span>
                 </div>
 
                 <button
                   onClick={() => handleEditClick(product)}
-                  className="bg-muted border border-border rounded-lg p-2 flex items-center justify-center transition-colors hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-primary min-w-[44px] min-h-[44px]"
+                  className="bg-warning/10 border border-warning/20 text-warning hover:bg-warning/20 rounded-lg flex items-center justify-center p-2 aspect-square transition-colors focus:outline-none focus:ring-2 focus:ring-warning shrink-0 ml-2"
                   type="button"
                   aria-label={`Editar producto ${product.name}`}
                 >
-                  <Edit className="size-4 text-foreground" aria-hidden="true" />
+                  <Edit className="size-5" aria-hidden="true" />
                 </button>
               </div>
             ))}
             
             {filteredProducts.length === 0 && (
-              <div className="rounded-card bg-card p-8 text-center border border-border">
+              <div className="col-span-full rounded-card bg-card p-8 text-center border border-border">
                 <Package className="mx-auto mb-2 size-12 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">No se encontraron productos</p>
               </div>
@@ -265,42 +401,73 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
                 <label htmlFor="product-price" className="text-sm font-semibold text-muted-foreground block mb-1.5">
                   Precio
                 </label>
-                <input
-                  id="product-price"
-                  type="number"
-                  min="0"
-                  value={editingProduct.price}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value) || 0;
-                    if (val >= 0) {
-                      setEditingProduct({ ...editingProduct, price: val });
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full p-3 text-sm rounded-card border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
-                  aria-label="Precio del producto"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+                  <input
+                    id="product-price"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={editingProduct.price === "" ? "" : Number(editingProduct.price).toLocaleString("es-CO")}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, "");
+                      if (rawValue === "") {
+                        setEditingProduct({ ...editingProduct, price: "" });
+                      } else {
+                        setEditingProduct({ ...editingProduct, price: parseInt(rawValue, 10) });
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-full p-3 pl-8 text-sm rounded-card border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
+                    aria-label="Precio del producto"
+                  />
+                </div>
               </div>
 
               <div>
                 <label htmlFor="product-stock" className="text-sm font-semibold text-muted-foreground block mb-1.5">
                   Stock (unidades)
                 </label>
-                <input
-                  id="product-stock"
-                  type="number"
-                  min="0"
-                  value={editingProduct.stock}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 0;
-                    if (val >= 0) {
-                      setEditingProduct({ ...editingProduct, stock: val });
-                    }
-                  }}
-                  placeholder="0"
-                  className="w-full p-3 text-sm rounded-card border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
-                  aria-label="Stock disponible del producto"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(prev => prev ? { ...prev, stock: Math.max(0, (Number(prev.stock) || 0) - 1) } : prev)}
+                    className="flex items-center justify-center size-11 rounded-card border border-border bg-muted hover:bg-muted/80 transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label="Reducir stock"
+                  >
+                    <Minus className="size-5" />
+                  </button>
+                  <input
+                    id="product-stock"
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    value={editingProduct.stock}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setEditingProduct({ ...editingProduct, stock: "" });
+                      } else {
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed) && parsed >= 0) {
+                          setEditingProduct({ ...editingProduct, stock: parsed });
+                        }
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-full text-center p-3 text-sm rounded-card border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
+                    aria-label="Stock disponible del producto"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(prev => prev ? { ...prev, stock: (Number(prev.stock) || 0) + 1 } : prev)}
+                    className="flex items-center justify-center size-11 rounded-card border border-border bg-muted hover:bg-muted/80 transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-primary"
+                    aria-label="Aumentar stock"
+                  >
+                    <Plus className="size-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -370,8 +537,6 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
           </div>
         </div>
       </Modal>
-
-      <BottomNav active="inventory" onNavigate={onNavigate} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Vendor } from "../App";
+import { StatusBadge } from "./molecules/StatusBadge";
 
 interface LoginScreenProps {
   vendors: Vendor[];
@@ -26,9 +27,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
             <div className="text-xs opacity-90 leading-tight text-white">Sistema de Información</div>
           </div>
         </div>
-        <span className="bg-white/30 text-white rounded-full px-2.5 py-1 text-xs font-medium">
-          En línea
-        </span>
+        <StatusBadge status="success" label="En línea" />
       </header>
 
       <div className="flex-1 overflow-auto p-4 space-y-5">
@@ -67,9 +66,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
                       Acceso total · Reportes · Inventario
                     </div>
                   </div>
-                  <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-amber-100 text-amber-700 flex-shrink-0">
-                    Admin
-                  </span>
+                  <StatusBadge status="warning" label="Admin" className="shrink-0" />
                 </button>
               ))}
             </div>
@@ -102,9 +99,7 @@ export function LoginScreen({ vendors, onLogin }: LoginScreenProps) {
                       Ventas del turno actual
                     </div>
                   </div>
-                  <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-100 text-emerald-700 flex-shrink-0">
-                    Vendedor
-                  </span>
+                  <StatusBadge status="success" label="Vendedor" className="shrink-0" />
                 </button>
               ))}
             </div>
