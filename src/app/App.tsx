@@ -1,5 +1,6 @@
-import { ReactNode, useState, Suspense, lazy } from "react";
+import { ReactNode, useState, useEffect, Suspense, lazy } from "react";
 import { Toaster } from "./components/ui/sonner";
+import { getProducts, getSales, createProduct, updateProduct, deleteProduct, createSale } from "./services/fastapi";
 
 const VendorHome = lazy(() => import("./components/VendorHome").then(m => ({ default: m.VendorHome })));
 const VendorSimpleView = lazy(() => import("./components/VendorSimpleView").then(m => ({ default: m.VendorSimpleView })));
@@ -62,7 +63,7 @@ export interface GlobalState {
     category: string;
     stock: number;
     status: "good" | "warning" | "critical";
-    image: string;
+    image?: string;
     price: number;
     emoji?: string;
   }[];
@@ -153,6 +154,26 @@ export default function App() {
     inventory: initialInventory,
   });
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [apiProducts, apiSales] = await Promise.all([
+          getProducts(),
+          getSales()
+        ]);
+        
+        setGlobalState(prev => ({
+          ...prev,
+          inventory: apiProducts.length > 0 ? (apiProducts as any) : prev.inventory,
+          sales: apiSales.length > 0 ? apiSales.map(s => ({ ...s, time: new Date(s.time) })) as any : prev.sales
+        }));
+      } catch (err) {
+        console.error("Backend fetch failed. Using local mock data.", err);
+      }
+    }
+    loadData();
+  }, []);
+
   const isAdmin = globalState.currentVendor.role === "Administrador";
 
   const renderWithA11y = (content: ReactNode) => (
@@ -216,7 +237,8 @@ export default function App() {
     }));
   };
 
-  const handleUpdateProduct = (productId: string, updates: Partial<any>) => {
+  const handleUpdateProduct = async (productId: string, updates: Partial<any>) => {
+    // Optimistic UI update
     setGlobalState(prev => ({
       ...prev,
       inventory: prev.inventory.map(p => {
@@ -229,28 +251,62 @@ export default function App() {
         return p;
       })
     }));
+
+    // Backend update
+    try {
+      await updateProduct(productId, updates);
+    } catch (e) {
+      console.error("Failed to update product on backend", e);
+    }
   };
 
-  const handleAddProduct = (product: Omit<any, "id" | "status">) => {
+  const handleAddProduct = async (product: Omit<any, "id" | "status">) => {
+    const tempId = `product-${Date.now()}`;
     const newProduct = {
       ...product,
-      id: `product-${Date.now()}`,
+      id: tempId,
       status: product.stock <= 5 ? "critical" : product.stock <= 15 ? "warning" : "good"
     };
+    
     setGlobalState(prev => ({
       ...prev,
       inventory: [...prev.inventory, newProduct]
     }));
+
+    try {
+      const apiProduct = await createProduct({
+        name: product.name,
+        category: product.category,
+        stock: product.stock,
+        status: newProduct.status,
+        image: product.image,
+        price: product.price,
+        emoji: product.emoji
+      });
+      // Update with real ID
+      setGlobalState(prev => ({
+        ...prev,
+        inventory: prev.inventory.map(p => p.id === tempId ? { ...p, id: apiProduct.id } : p)
+      }));
+    } catch (e) {
+      console.error("Failed to create product on backend", e);
+    }
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     setGlobalState(prev => ({
       ...prev,
       inventory: prev.inventory.filter(p => p.id !== productId)
     }));
+
+    try {
+      await deleteProduct(productId);
+    } catch (e) {
+      console.error("Failed to delete product on backend", e);
+    }
   };
 
-  const handleAddSale = (cart: any[], total: number, paymentMethod: string, amountReceived?: number) => {
+  const handleAddSale = async (cart: any[], total: number, paymentMethod: string, amountReceived?: number) => {
     const newId = String(saleCounter).padStart(3, "0");
     setSaleCounter(prev => prev + 1);
     const newSale = {
@@ -284,6 +340,31 @@ export default function App() {
       sales: [newSale, ...prev.sales],
       inventory: updatedInventory
     }));
+
+    try {
+      const apiSale = await createSale({
+        total: newSale.total,
+        itemCount: newSale.itemCount,
+        paymentMethod: newSale.paymentMethod,
+        status: newSale.status,
+        vendorName: newSale.vendorName,
+        amountReceived: newSale.amountReceived,
+        change: newSale.change,
+        products: cart.map(c => ({
+          product_id: c.id,
+          name: c.name,
+          quantity: c.quantity,
+          price: c.price,
+          emoji: c.emoji
+        }))
+      });
+      setGlobalState(prev => ({
+        ...prev,
+        sales: prev.sales.map(s => s.id === newId ? { ...s, id: apiSale.id } : s)
+      }));
+    } catch (e) {
+      console.error("Failed to record sale on backend", e);
+    }
   };
 
   const handleCancelSale = (saleId: string) => {

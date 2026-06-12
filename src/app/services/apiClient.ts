@@ -1,6 +1,6 @@
 type ApiMode = "rest" | "graphql";
 
-const DEFAULT_BASE_URL = "http://localhost:4100";
+const DEFAULT_BASE_URL = "http://localhost:8000";
 const DEFAULT_GRAPHQL_PATH = "/graphql";
 
 const env = typeof import.meta !== "undefined" ? import.meta.env : undefined;
