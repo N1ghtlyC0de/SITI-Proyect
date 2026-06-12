@@ -20,9 +20,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const [employeeCount, setEmployeeCount] = useState<number>(1);
   const [savedData, setSavedData] = useState<boolean>(false);
 
-  // Store number of hours first, then time slots.
-  // We'll store hours per employee in a separate state, and slots in another.
-  const [employeeHours, setEmployeeHours] = useState<{ [key: number]: number }>({ 1: 0 });
+  // Store time slots. Hours are calculated automatically based on slots selected.
   const [employeeSlots, setEmployeeSlots] = useState<{ [key: number]: Set<number> }>({ 1: new Set() });
 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -45,7 +43,6 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const handleIncrement = () => {
     setEmployeeCount(prev => {
       const next = prev + 1;
-      setEmployeeHours(curr => ({ ...curr, [next]: 0 }));
       setEmployeeSlots(curr => ({ ...curr, [next]: new Set() }));
       return next;
     });
@@ -55,36 +52,20 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
     if (employeeCount > 1) {
       setEmployeeCount(prev => {
         const next = prev - 1;
-        const newHours = { ...employeeHours };
         const newSlots = { ...employeeSlots };
-        delete newHours[prev];
         delete newSlots[prev];
-        setEmployeeHours(newHours);
         setEmployeeSlots(newSlots);
         return next;
       });
     }
   };
 
-  const updateHours = (empIndex: number, delta: number) => {
-    setEmployeeHours(prev => ({
-      ...prev,
-      [empIndex]: Math.max(0, (prev[empIndex] || 0) + delta)
-    }));
-  };
-
   const toggleSlot = (empIndex: number, slotId: number) => {
     setEmployeeSlots(prev => {
       const empSet = new Set(prev[empIndex] || new Set());
-      const hoursWorked = employeeHours[empIndex] || 0;
-
       if (empSet.has(slotId)) {
         empSet.delete(slotId);
       } else {
-        if (empSet.size >= hoursWorked) {
-          setAlertMessage("El número de horas registradas es menor, valida las franjas trabajadas");
-          return prev;
-        }
         empSet.add(slotId);
       }
       return { ...prev, [empIndex]: empSet };
@@ -93,30 +74,28 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
 
   const handleSave = () => {
     let hasEmpty = false;
-    for (let i = 1; i <= employeeCount; i++) {
-      const hoursWorked = employeeHours[i] || 0;
-      const slots = employeeSlots[i] || new Set();
-      
-      if (hoursWorked === 0 || slots.size === 0) {
-        hasEmpty = true;
-      }
+    const payload = [];
 
-      if (hoursWorked > 0 && slots.size < hoursWorked) {
-        setAlertMessage("Te falta registrar alguna franja horaria");
-        return;
-      }
-      if (slots.size > hoursWorked) {
-        setAlertMessage("El número de horas registradas es menor, valida las franjas trabajadas");
-        return;
+    for (let i = 1; i <= employeeCount; i++) {
+      const slots = employeeSlots[i] || new Set();
+      if (slots.size === 0) {
+        hasEmpty = true;
+      } else {
+        payload.push({
+          empleado_id: i, // Assuming index is ID for now
+          horas_trabajadas: slots.size,
+          franjas: Array.from(slots)
+        });
       }
     }
 
     if (hasEmpty) {
-      setAlertMessage("Completa la información de los turnos");
+      setAlertMessage("Completa la información de los turnos seleccionando al menos una franja horaria para cada empleado.");
       return;
     }
 
-    // Mock save
+    // Mock save: The payload array now contains auto-calculated horas_trabajadas
+    console.log("Submitting payload:", payload);
     setSavedData(true);
     setTimeout(() => setSavedData(false), 3000);
   };
@@ -124,6 +103,11 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const handleNewShift = () => {
     onNavigate?.("home");
   };
+
+  const isValid = Array.from({ length: employeeCount }).every((_, i) => {
+    const slots = employeeSlots[i + 1];
+    return slots && slots.size > 0;
+  });
 
   return (
     <div className="flex min-h-screen flex-col" style={{ backgroundColor: "#F4F4F2", width: "100%" }}>
@@ -189,8 +173,8 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
           <div className="space-y-4">
             {Array.from({ length: employeeCount }).map((_, i) => {
               const empIndex = i + 1;
-              const hoursWorked = employeeHours[empIndex] || 0;
               const selectedSlots = employeeSlots[empIndex] || new Set();
+              const hoursWorked = selectedSlots.size;
 
               return (
                 <div key={empIndex} className="rounded-card bg-card p-4 shadow-sm border border-border animate-in slide-in-from-bottom-2">
@@ -202,22 +186,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-sm font-medium mb-2">Horas trabajadas:</p>
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => updateHours(empIndex, -1)}
-                        className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-border"
-                      >
-                        <Minus className="size-4" />
-                      </button>
-                      <span className="font-bold tabular-nums w-8 text-center">{hoursWorked}</span>
-                      <button 
-                        onClick={() => updateHours(empIndex, 1)}
-                        className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20"
-                      >
-                        <Plus className="size-4" />
-                      </button>
-                    </div>
+                    <p className="text-sm font-medium mb-2">Horas trabajadas: <strong>{hoursWorked}</strong></p>
                   </div>
 
                   <p className="text-sm font-medium mb-2">Selecciona las franjas horarias:</p>
@@ -251,10 +220,13 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
           <div className="pt-4 space-y-3">
             <button
               onClick={handleSave}
+              disabled={!isValid}
               className={`flex w-full items-center justify-center gap-2 rounded-lg px-6 py-4 font-semibold shadow-md transition-all ${
                 savedData 
                   ? 'bg-success text-success-foreground' 
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95'
+                  : !isValid 
+                    ? 'bg-primary/50 text-primary-foreground/50 cursor-not-allowed opacity-50' 
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95'
               }`}
               style={{ minHeight: 56 }}
             >
