@@ -8,7 +8,9 @@ import {
   CheckCircle2,
   Calendar,
   LogOut,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { HeaderNav } from "./HeaderNav";
 
@@ -23,6 +25,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   // Store time slots. Hours are calculated automatically based on slots selected.
   const [employeeSlots, setEmployeeSlots] = useState<{ [key: number]: Set<number> }>({ 1: new Set() });
 
+  const [activeEmployee, setActiveEmployee] = useState<number>(1);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   const timeSlots = [
@@ -57,6 +60,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         setEmployeeSlots(newSlots);
         return next;
       });
+      setActiveEmployee(prev => Math.min(prev, employeeCount - 1));
     }
   };
 
@@ -133,9 +137,9 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         <div className="flex flex-1" />
       </div>
 
-      <div className="flex-1 overflow-auto pb-6 pt-0">
-        <div className="mx-auto w-full max-w-6xl space-y-6 p-4">
-          
+      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0">
+        {/* Left Column (Master Panel & Today's Shift Card) */}
+        <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card overflow-y-auto p-4 space-y-4">
           <div className="rounded-card bg-card p-6 shadow-sm border border-border text-center">
             <div className="flex justify-center mb-3">
               <div className="rounded-full bg-primary/10 p-3">
@@ -170,54 +174,117 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
             </div>
           </div>
 
-          <div className="space-y-4">
-            {Array.from({ length: employeeCount }).map((_, i) => {
-              const empIndex = i + 1;
-              const selectedSlots = employeeSlots[empIndex] || new Set();
-              const hoursWorked = selectedSlots.size;
+          {/* Master Employee List */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
+              Empleados ({employeeCount})
+            </p>
+            <div className="space-y-1">
+              {Array.from({ length: employeeCount }).map((_, i) => {
+                const empIndex = i + 1;
+                const selectedSlots = employeeSlots[empIndex] || new Set();
+                const hoursWorked = selectedSlots.size;
+                const isActive = activeEmployee === empIndex;
 
-              return (
-                <div key={empIndex} className="rounded-card bg-card p-4 shadow-sm border border-border animate-in slide-in-from-bottom-2">
-                  <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="size-5 text-primary" />
-                      <h3 className="font-semibold">Empleado {empIndex}</h3>
+                return (
+                  <button
+                    key={empIndex}
+                    onClick={() => setActiveEmployee(empIndex)}
+                    className={`w-full flex items-center justify-between rounded-lg px-4 py-3 text-left transition-colors border ${
+                      isActive
+                        ? "bg-primary/10 border-primary text-primary font-medium"
+                        : "bg-transparent border-transparent hover:bg-accent text-foreground"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Users className={`size-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                      <span>Empleado {empIndex}</span>
                     </div>
-                  </div>
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
+                      hoursWorked > 0
+                        ? "bg-success/20 text-success"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {hoursWorked} {hoursWorked === 1 ? "hora" : "horas"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
-                  <div className="mb-4">
-                    <p className="text-sm font-medium mb-2">Horas trabajadas: <strong>{hoursWorked}</strong></p>
-                  </div>
-
-                  <p className="text-sm font-medium mb-2">Selecciona las franjas horarias:</p>
-                  
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 lg:grid-cols-3">
-                    {timeSlots.map((slot) => {
-                      const isSelected = selectedSlots.has(slot.id);
-                      return (
-                        <button
-                          key={slot.id}
-                          onClick={() => toggleSlot(empIndex, slot.id)}
-                          className={`
-                            flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-medium transition-colors
-                            ${isSelected 
-                              ? 'border-primary bg-primary/5 text-primary' 
-                              : 'border-border bg-transparent text-muted-foreground hover:bg-accent'
-                            }
-                          `}
-                        >
-                          {slot.label}
-                          {isSelected && <CheckCircle2 className="size-3.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+        {/* Right Column (Detail Workspace) */}
+        <div className="w-full lg:w-2/3 flex flex-col justify-between overflow-y-auto p-6 space-y-6">
+          <div className="space-y-6">
+            {/* Active Employee Detail Header */}
+            <div className="rounded-card bg-card p-6 shadow-sm border border-border animate-in fade-in duration-200">
+              <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="size-6 text-primary" />
+                  <h3 className="text-xl font-semibold">Configuración de Horas: Empleado {activeEmployee}</h3>
                 </div>
-              );
-            })}
+              </div>
+
+              <div className="mb-6 bg-accent/40 rounded-lg p-3 flex items-center gap-2">
+                <Clock className="size-5 text-primary" />
+                <span className="text-sm font-medium">
+                  Horas trabajadas: <strong className="text-base text-primary">{(employeeSlots[activeEmployee] || new Set()).size}</strong>
+                </span>
+              </div>
+
+              <p className="text-sm font-medium mb-3">Selecciona las franjas horarias trabajadas:</p>
+              
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+                {timeSlots.map((slot) => {
+                  const selectedSlots = employeeSlots[activeEmployee] || new Set();
+                  const isSelected = selectedSlots.has(slot.id);
+                  return (
+                    <button
+                      key={slot.id}
+                      onClick={() => toggleSlot(activeEmployee, slot.id)}
+                      className={`
+                        flex items-center justify-between rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors
+                        ${isSelected 
+                          ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm' 
+                          : 'border-border bg-transparent text-muted-foreground hover:bg-accent'
+                        }
+                      `}
+                    >
+                      {slot.label}
+                      {isSelected && <CheckCircle2 className="size-3.5 shrink-0 ml-1" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Anterior / Siguiente Navigation Controls */}
+            <div className="flex justify-between items-center py-4 border-t border-border">
+              <button
+                type="button"
+                onClick={() => setActiveEmployee(prev => Math.max(1, prev - 1))}
+                disabled={activeEmployee === 1}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
+              >
+                <ChevronLeft className="size-4" /> Anterior
+              </button>
+              <span className="text-sm font-medium text-muted-foreground">
+                Empleado {activeEmployee} de {employeeCount}
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveEmployee(prev => Math.min(employeeCount, prev + 1))}
+                disabled={activeEmployee === employeeCount}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
+              >
+                Siguiente <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="pt-4 space-y-3">
+          {/* Action Buttons at the bottom of the Workspace */}
+          <div className="pt-4 border-t border-border space-y-3">
             <button
               onClick={handleSave}
               disabled={!isValid}
@@ -249,11 +316,8 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
               Nuevo turno
             </button>
           </div>
-          
         </div>
       </div>
-      
-
 
       {alertMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
