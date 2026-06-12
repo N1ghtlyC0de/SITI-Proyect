@@ -23,6 +23,7 @@ import {
   Calculator
 } from "lucide-react";
 import { formatCurrency } from "../lib/utils";
+import { createValidation } from "../services/fastapi";
 import { HeaderNav } from "./HeaderNav";
 import { PrimaryButton } from "./molecules/PrimaryButton";
 import { KPICard } from "./molecules/KPICard";
@@ -134,11 +135,27 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
       color: colors[idx]
     }));
 
-  const handleValidateCash = () => {
+  const handleValidateCash = async () => {
     const cashInput = parseFloat(cashInRegister);
     if (isNaN(cashInput)) return;
 
-    if (Math.abs(cashInput - totalCashExpected) < 0.01) {
+    const diff = cashInput - totalCashExpected;
+    let status = "match";
+    if (diff < -0.01) status = "short";
+    else if (diff > 0.01) status = "over";
+
+    try {
+      await createValidation({
+        total_expected: totalCashExpected,
+        total_physical: cashInput,
+        difference: Math.abs(diff),
+        status: status
+      });
+    } catch(e) {
+      console.error("Failed to save validation to backend", e);
+    }
+
+    if (status === "match") {
       setValidationResult("match");
     } else {
       setValidationResult("mismatch");
@@ -178,15 +195,14 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
 
         {/* Right Section */}
         <div className="flex items-center justify-end gap-2 flex-1">
-          <button
+          <PrimaryButton
+            variant="header"
             onClick={() => setShowValidator(true)}
-            className="rounded-lg bg-white/20 px-3 py-1.5 text-xs font-semibold flex items-center gap-1 transition-colors hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
-            type="button"
+            icon={<Calculator aria-hidden="true" />}
             aria-label="Ir al Validador de caja"
           >
-            <Calculator className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Validador</span>
-          </button>
+          </PrimaryButton>
         </div>
       </header>
 
