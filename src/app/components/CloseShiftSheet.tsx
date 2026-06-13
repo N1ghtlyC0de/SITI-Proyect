@@ -84,12 +84,12 @@ export function CloseShiftSheet({
           borderRadius: "18px 18px 0 0",
           width: "100%",
           maxWidth: "720px",
-          maxHeight: "90vh",
+          maxHeight: "96vh",
           overflowY: "auto"
         }}
       >
         {/* Handle */}
-        <div style={{ padding: "12px 0 16px" }}>
+        <div style={{ padding: "8px 0 8px" }}>
           <div
             style={{
               width: "36px",
@@ -102,13 +102,13 @@ export function CloseShiftSheet({
         </div>
 
         {/* Sección 1: Resumen */}
-        <div style={{ padding: "0 20px 20px" }}>
+        <div style={{ padding: "0 20px 10px" }}>
           <div style={{
             backgroundColor: "#F4F4F2",
             borderRadius: "12px",
-            padding: "14px"
+            padding: "10px 14px"
           }}>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-2">
               <div
                 style={{
                   width: "38px",
@@ -127,10 +127,10 @@ export function CloseShiftSheet({
                 {getInitials(currentVendor.name)}
               </div>
               <div>
-                <div style={{ fontSize: "15px", fontWeight: 700, color: "#1A1A19" }}>
+                <div className="text-lg font-bold text-[#1A1A19]">
                   {currentVendor.name}
                 </div>
-                <div style={{ fontSize: "12px", color: "#757572" }}>
+                <div className="text-sm text-gray-500 font-medium">
                   {currentVendor.role}
                 </div>
               </div>
@@ -138,22 +138,22 @@ export function CloseShiftSheet({
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <div style={{ fontSize: "11px", color: "#757572", marginBottom: "4px" }}>Ventas</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Ventas</div>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19" }}>{ventasRealizadas}</span>
+                  <span className="text-lg md:text-xl font-bold text-[#1A1A19]">{ventasRealizadas}</span>
                   <span style={{ backgroundColor: "#E8F5EE", color: "#2F6B3E", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 600 }}>+</span>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: "11px", color: "#757572", marginBottom: "4px" }}>Total</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Total</div>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19" }}>${(totalVendido/1000).toFixed(0)}k</span>
+                  <span className="text-lg md:text-xl font-bold text-[#1A1A19]">${(totalVendido/1000).toFixed(0)}k</span>
                   <span style={{ backgroundColor: "#E8F5EE", color: "#2F6B3E", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 600 }}>+</span>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: "11px", color: "#757572", marginBottom: "4px" }}>Duración</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19" }}>{durationString}</div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Duración</div>
+                <div className="text-lg md:text-xl font-bold text-[#1A1A19]">{durationString}</div>
               </div>
             </div>
 
@@ -192,12 +192,12 @@ export function CloseShiftSheet({
         </div>
 
         {/* Sección 2: ¿Quién sigue? */}
-        <div style={{ padding: "0 20px 20px" }}>
-          <div style={{ marginBottom: "12px" }}>
-            <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19" }}>
+        <div style={{ padding: "0 20px 10px" }}>
+          <div style={{ marginBottom: "6px" }}>
+            <h3 className="text-xl md:text-2xl font-bold text-[#1A1A19]">
               Siguiente turno
             </h3>
-            <p style={{ fontSize: "12px", color: "#757572" }}>
+            <p className="text-xs md:text-sm text-gray-500">
               Selecciona el próximo vendedor o cierra sin relevo.
             </p>
           </div>
@@ -210,16 +210,15 @@ export function CloseShiftSheet({
                 <button
                   key={vendor.id}
                   onClick={() => handleSelectVendor(vendor.id)}
+                  className={`w-full cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:shadow-sm ${
+                    isSelected ? "border-2 border-[#2F6B3E] bg-[#E8F5EE]" : "border border-[#E8E8E5] bg-white"
+                  }`}
                   style={{
-                    padding: "13px 14px",
+                    padding: "10px 14px",
                     borderRadius: "10px",
-                    border: `1.5px solid ${isSelected ? "#2F6B3E" : "#E8E8E5"}`,
-                    backgroundColor: isSelected ? "#F4F4F2" : "white",
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    cursor: "pointer",
-                    transition: "all 0.12s ease",
                     textAlign: "left"
                   }}
                 >
@@ -242,24 +241,25 @@ export function CloseShiftSheet({
                   </div>
 
                   <div className="flex-1">
-                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19", marginBottom: "2px" }}>
+                    <div className="text-base font-semibold text-[#1A1A19]" style={{ marginBottom: "2px" }}>
                       {vendor.name}
                     </div>
-                    <div style={{ fontSize: "11px", color: "#757572" }}>
+                    <div className="text-sm text-gray-500">
                       {vendor.role}
                     </div>
                   </div>
 
                   {isSelected && (
-                    <div style={{
-                      backgroundColor: "#E8F5EE",
-                      color: "#2F6B3E",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                      padding: "3px 8px",
-                      borderRadius: "12px"
-                    }}>
-                      Siguiente turno
+                    <div 
+                      className="flex items-center gap-1 text-[#2F6B3E] bg-[#E8F5EE] border border-[#2F6B3E]/30 shrink-0"
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        padding: "4px 10px",
+                        borderRadius: "12px"
+                      }}
+                    >
+                      <span aria-hidden="true">✓</span> Siguiente turno
                     </div>
                   )}
                 </button>
@@ -268,16 +268,15 @@ export function CloseShiftSheet({
 
             <button
               onClick={handleSelectNoRelief}
+              className={`w-full cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:shadow-sm ${
+                isClosingWithoutRelief ? "border-2 border-[#1A1A19] bg-[#F4F4F2]" : "border border-[#E8E8E5] bg-white"
+              }`}
               style={{
-                padding: "13px 14px",
+                padding: "10px 14px",
                 borderRadius: "10px",
-                border: `1.5px solid ${isClosingWithoutRelief ? "#1A1A19" : "#E8E8E5"}`,
-                backgroundColor: isClosingWithoutRelief ? "#F4F4F2" : "white",
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
-                cursor: "pointer",
-                transition: "all 0.12s ease",
                 textAlign: "left",
                 marginTop: "4px"
               }}
@@ -297,23 +296,24 @@ export function CloseShiftSheet({
                 <Lock className="size-5 text-[#3D3D3B]" />
               </div>
               <div className="flex-1">
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#3D3D3B", marginBottom: "2px" }}>
+                <div className="text-base font-semibold text-[#3D3D3B]" style={{ marginBottom: "2px" }}>
                   Sin relevo — cerrar y bloquear
                 </div>
-                <div style={{ fontSize: "11px", color: "#757572" }}>
+                <div className="text-sm text-gray-500">
                   El sistema quedará en reposo hasta el próximo acceso
                 </div>
               </div>
               {isClosingWithoutRelief && (
-                <div style={{
-                  backgroundColor: "#E8E8E5",
-                  color: "#1A1A19",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  padding: "3px 8px",
-                  borderRadius: "12px"
-                }}>
-                  Seleccionado
+                <div 
+                  className="flex items-center gap-1 text-[#1A1A19] bg-[#E8E8E5] border border-[#1A1A19]/30 shrink-0"
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    padding: "4px 10px",
+                    borderRadius: "12px"
+                  }}
+                >
+                  <span aria-hidden="true">✓</span> Seleccionado
                 </div>
               )}
             </button>
@@ -321,20 +321,21 @@ export function CloseShiftSheet({
         </div>
 
         {/* Sección 3: Observación */}
-        <div style={{ padding: "0 20px 20px" }}>
+        <div style={{ padding: "0 20px 10px" }}>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Nota del turno (opcional)"
-            rows={3}
+            rows={2}
+            className="placeholder-gray-500"
             style={{
               width: "100%",
-              padding: "12px",
+              padding: "10px 12px",
               borderRadius: "10px",
-              border: "1px solid #E8E8E5",
+              border: "1px solid #9CA3AF",
               fontSize: "13px",
               color: "#1A1A19",
-              backgroundColor: "#fff",
+              backgroundColor: "#F9FAFB",
               resize: "none",
               outline: "none"
             }}
@@ -342,7 +343,7 @@ export function CloseShiftSheet({
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "0 20px 24px", display: "flex", flexDirection: "col", flexWrap: "wrap", justifyContent: "center", gap: "8px" }}>
+        <div style={{ padding: "0 20px 16px", display: "flex", flexDirection: "column", flexWrap: "wrap", justifyContent: "center", gap: "6px" }}>
           <button
             onClick={handleConfirm}
             disabled={!hasSelection || (pendingOfflineSales > 0 && forceCloseWarning)}
@@ -351,7 +352,7 @@ export function CloseShiftSheet({
               backgroundColor: !hasSelection ? "#E8E8E5" : "#B71C1C",
               color: !hasSelection ? "#A3A3A0" : "white",
               borderRadius: "10px",
-              padding: "14px",
+              padding: "12px",
               fontSize: "15px",
               fontWeight: 700,
               cursor: !hasSelection ? "not-allowed" : "pointer",

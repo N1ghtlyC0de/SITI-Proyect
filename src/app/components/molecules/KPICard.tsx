@@ -59,13 +59,13 @@ export function KPICard({
     >
       <div className="flex items-center gap-2 mb-2">
         {Icon && <Icon className={`size-4 ${styles.icon}`} aria-hidden="true" />}
-        <span className={`text-sm font-medium ${variant !== "default" ? "opacity-90" : "text-muted-foreground"}`}>
+        <span className={`text-base font-semibold ${variant !== "default" ? "opacity-90" : "text-muted-foreground"}`}>
           {title}
         </span>
       </div>
-      <p className={`text-xl font-bold ${styles.text} tabular-nums`}>{value}</p>
+      <p className={`text-2xl font-bold ${styles.text} tabular-nums`}>{value}</p>
       {subtitle && (
-        <p className={`text-xs mt-1 ${variant !== "default" ? "opacity-75" : "text-muted-foreground"}`}>
+        <p className={`text-sm mt-1 ${variant !== "default" ? "opacity-75" : "text-muted-foreground"}`}>
           {subtitle}
         </p>
       )}

@@ -115,6 +115,17 @@ export function VendorSimpleView({
           <span className="bg-white/30 text-white rounded-full px-2.5 py-1 text-xs font-medium">
             En línea
           </span>
+          <span className="text-xs text-white font-medium bg-white/10 px-2 py-1 rounded-md shrink-0">
+            Turno: {durationString}
+          </span>
+          <button
+            onClick={() => setShowCloseShiftSheet(true)}
+            className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 flex items-center gap-1 shrink-0"
+            type="button"
+            aria-label="Cerrar turno actual"
+          >
+            <span aria-hidden="true">✕</span> Cerrar turno
+          </button>
           <button
             onClick={onLogout}
             className="p-1.5 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
@@ -202,33 +213,7 @@ export function VendorSimpleView({
         </div>
       </div>
 
-      {/* Shift bar */}
-      <div
-        className="sticky bottom-0 bg-card border-t border-border p-2.5 px-4 flex items-center justify-between z-30"
-        role="contentinfo"
-        aria-label="Información de turno actual"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">{currentVendor.emoji}</span>
-          <div>
-            <div className="text-sm font-bold text-foreground leading-tight">
-              {currentVendor.name}
-            </div>
-            <div className="text-xs text-muted-foreground leading-tight">
-              Turno: {durationString}
-            </div>
-          </div>
-        </div>
 
-        <button
-          onClick={() => setShowCloseShiftSheet(true)}
-          className="bg-card border border-border rounded-lg px-3 py-1.5 text-xs font-semibold text-foreground flex items-center gap-1 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1"
-          type="button"
-          aria-label="Cerrar turno actual"
-        >
-          <span aria-hidden="true">✕</span> Cerrar turno
-        </button>
-      </div>
 
       <Suspense fallback={null}>
         {showCloseShiftSheet && (

@@ -133,20 +133,12 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
         style={{ height: "64px" }}
       >
         {/* Left Section */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button
-            onClick={() => onNavigate?.("home")}
-            className="rounded-full p-1 transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
-            aria-label="Volver al inicio"
-            type="button"
-          >
-            <ArrowLeft className="size-5" aria-hidden="true" />
-          </button>
+        <div className="flex items-center gap-3 flex-1 min-w-0 pl-2">
           <h1 className="text-lg font-semibold tracking-tight truncate hidden sm:block">Inventario en tiempo real</h1>
         </div>
 
         {/* Center Section - Navigation */}
-        <div className="flex justify-center shrink-0 mx-2">
+        <div className="hidden lg:flex justify-center shrink-0 mx-2">
           <HeaderNav active="inventory" onNavigate={onNavigate} />
         </div>
 
@@ -245,28 +237,40 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
             </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar">
-            <StatusChip
-              status="neutral"
-              isActive={filterStatus === "all"}
-              onClick={() => setFilterStatus("all")}
+          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar w-full">
+            <div className="flex gap-2">
+              <StatusChip
+                status="neutral"
+                isActive={filterStatus === "all"}
+                onClick={() => setFilterStatus("all")}
+              >
+                Todos
+              </StatusChip>
+              <StatusChip
+                status="warning"
+                isActive={filterStatus === "escasos"}
+                onClick={() => setFilterStatus("escasos")}
+              >
+                Escasos
+              </StatusChip>
+              <StatusChip
+                status="error"
+                isActive={filterStatus === "agotados"}
+                onClick={() => setFilterStatus("agotados")}
+              >
+                Agotados
+              </StatusChip>
+            </div>
+            
+            <button
+              onClick={handleCreateClick}
+              className="bg-[#2F6B3E] hover:bg-[#23512e] text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#2F6B3E] flex items-center gap-1.5 shrink-0"
+              type="button"
+              aria-label="Añadir nuevo producto"
             >
-              Todos
-            </StatusChip>
-            <StatusChip
-              status="warning"
-              isActive={filterStatus === "escasos"}
-              onClick={() => setFilterStatus("escasos")}
-            >
-              Escasos
-            </StatusChip>
-            <StatusChip
-              status="error"
-              isActive={filterStatus === "agotados"}
-              onClick={() => setFilterStatus("agotados")}
-            >
-              Agotados
-            </StatusChip>
+              <Plus className="size-4" aria-hidden="true" />
+              <span>Añadir Producto</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

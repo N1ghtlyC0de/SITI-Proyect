@@ -114,22 +114,16 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   });
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ backgroundColor: "#F4F4F2", width: "100%" }}>
+    <div className="flex min-h-screen h-auto lg:h-screen lg:overflow-hidden flex-col" style={{ backgroundColor: "#F4F4F2", width: "100%" }}>
       {/* Header */}
-      <div className="sticky top-0 z-30 flex-shrink-0 flex items-center justify-between px-4 w-full" style={{ backgroundColor: "#2F6B3E", height: "64px", color: "white" }}>
+      <div className="sticky top-0 z-50 flex-shrink-0 flex items-center justify-between px-4 w-full shadow-md" style={{ backgroundColor: "#2F6B3E", height: "64px", color: "white" }}>
         {/* Left Section */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button 
-            onClick={() => onNavigate?.("home")}
-            className="rounded-full p-1 transition-colors hover:bg-white/20 shrink-0"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+        <div className="flex items-center gap-3 flex-1 min-w-0 pl-2">
           <h1 className="text-lg font-semibold tracking-tight truncate hidden sm:block">Registro de Turnos</h1>
         </div>
         
         {/* Center Section - Navigation */}
-        <div className="flex justify-center shrink-0 mx-2">
+        <div className="hidden lg:flex justify-center shrink-0 mx-2">
           <HeaderNav active="shifts" onNavigate={onNavigate} />
         </div>
 
@@ -137,10 +131,10 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         <div className="flex flex-1" />
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0">
+      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0 lg:min-h-0">
         {/* Left Column (Master Panel & Today's Shift Card) */}
-        <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card overflow-y-auto p-4 space-y-4">
-          <div className="rounded-card bg-card p-6 shadow-sm border border-border text-center">
+        <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card lg:overflow-hidden p-4 space-y-4 lg:h-full lg:shrink-0 mb-6 lg:mb-0">
+          <div className="rounded-card bg-card p-6 shadow-sm border border-border text-center shrink-0">
             <div className="flex justify-center mb-3">
               <div className="rounded-full bg-primary/10 p-3">
                 <Calendar className="size-6 text-primary" />
@@ -174,12 +168,12 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
             </div>
           </div>
 
-          {/* Master Employee List */}
-          <div className="space-y-2">
+          {/* Master Employee List Container with horizontal scroll on mobile, vertical on desktop */}
+          <div className="flex flex-col space-y-2 lg:flex-1 lg:min-h-0 lg:overflow-hidden shrink-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
               Empleados ({employeeCount})
             </p>
-            <div className="space-y-1">
+            <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto whitespace-nowrap lg:whitespace-normal gap-2 lg:gap-0 lg:space-y-1 pb-2 lg:pb-0 lg:pr-1 lg:h-auto">
               {Array.from({ length: employeeCount }).map((_, i) => {
                 const empIndex = i + 1;
                 const selectedSlots = employeeSlots[empIndex] || new Set();
@@ -190,22 +184,24 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                   <button
                     key={empIndex}
                     onClick={() => setActiveEmployee(empIndex)}
-                    className={`w-full flex items-center justify-between rounded-lg px-4 py-3 text-left transition-colors border ${
+                    className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 lg:px-4 lg:py-2.5 text-left transition-colors border text-sm shrink-0 w-auto lg:w-full ${
                       isActive
-                        ? "bg-primary/10 border-primary text-primary font-medium"
+                        ? "bg-primary/10 border-primary text-primary font-semibold"
                         : "bg-transparent border-transparent hover:bg-accent text-foreground"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 lg:gap-3">
                       <Users className={`size-4 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                       <span>Empleado {empIndex}</span>
                     </div>
-                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium shrink-0 ${
                       hoursWorked > 0
                         ? "bg-success/20 text-success"
                         : "bg-muted text-muted-foreground"
                     }`}>
-                      {hoursWorked} {hoursWorked === 1 ? "hora" : "horas"}
+                      {hoursWorked}
+                      <span className="lg:inline hidden">{hoursWorked === 1 ? " hora" : " horas"}</span>
+                      <span className="lg:hidden">h</span>
                     </span>
                   </button>
                 );
@@ -215,27 +211,31 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         </div>
 
         {/* Right Column (Detail Workspace) */}
-        <div className="w-full lg:w-2/3 flex flex-col justify-between overflow-y-auto p-6 space-y-6">
-          <div className="space-y-6">
-            {/* Active Employee Detail Header */}
-            <div className="rounded-card bg-card p-6 shadow-sm border border-border animate-in fade-in duration-200">
-              <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+        <div className="w-full lg:w-2/3 flex flex-col lg:h-full lg:overflow-hidden p-6 justify-between space-y-6">
+          {/* Active Employee Container (strictly layout constrained) */}
+          <div className="flex flex-col bg-card rounded-card shadow-sm border border-border overflow-hidden lg:flex-1 lg:min-h-0">
+            {/* Stationary Header */}
+            <div className="p-6 pb-4 border-b border-border shrink-0">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Users className="size-6 text-primary" />
                   <h3 className="text-xl font-semibold">Configuración de Horas: Empleado {activeEmployee}</h3>
                 </div>
               </div>
 
-              <div className="mb-6 bg-accent/40 rounded-lg p-3 flex items-center gap-2">
+              <div className="mb-2 bg-accent/40 rounded-lg p-3 flex items-center gap-2">
                 <Clock className="size-5 text-primary" />
                 <span className="text-sm font-medium">
                   Horas trabajadas: <strong className="text-base text-primary">{(employeeSlots[activeEmployee] || new Set()).size}</strong>
                 </span>
               </div>
+            </div>
 
-              <p className="text-sm font-medium mb-3">Selecciona las franjas horarias trabajadas:</p>
+            {/* Timeframe Grid wrapped in its own overflow-y-auto container */}
+            <div className="p-6 space-y-3 h-auto overflow-visible lg:flex-1 lg:overflow-y-auto lg:min-h-0">
+              <p className="text-sm font-medium">Selecciona las franjas horarias trabajadas:</p>
               
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3">
                 {timeSlots.map((slot) => {
                   const selectedSlots = employeeSlots[activeEmployee] || new Set();
                   const isSelected = selectedSlots.has(slot.id);
@@ -258,33 +258,33 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                 })}
               </div>
             </div>
-
-            {/* Anterior / Siguiente Navigation Controls */}
-            <div className="flex justify-between items-center py-4 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setActiveEmployee(prev => Math.max(1, prev - 1))}
-                disabled={activeEmployee === 1}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
-              >
-                <ChevronLeft className="size-4" /> Anterior
-              </button>
-              <span className="text-sm font-medium text-muted-foreground">
-                Empleado {activeEmployee} de {employeeCount}
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveEmployee(prev => Math.min(employeeCount, prev + 1))}
-                disabled={activeEmployee === employeeCount}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
-              >
-                Siguiente <ChevronRight className="size-4" />
-              </button>
-            </div>
           </div>
 
-          {/* Action Buttons at the bottom of the Workspace */}
-          <div className="pt-4 border-t border-border space-y-3">
+          {/* Stationary Navigation Controls */}
+          <div className="flex justify-between items-center py-4 border-t border-border shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveEmployee(prev => Math.max(1, prev - 1))}
+              disabled={activeEmployee === 1}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
+            >
+              <ChevronLeft className="size-4" /> Anterior
+            </button>
+            <span className="text-sm font-medium text-muted-foreground">
+              Empleado {activeEmployee} de {employeeCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveEmployee(prev => Math.min(employeeCount, prev + 1))}
+              disabled={activeEmployee === employeeCount}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
+            >
+              Siguiente <ChevronRight className="size-4" />
+            </button>
+          </div>
+
+          {/* Stationary Save Actions */}
+          <div className="pt-4 border-t border-border space-y-3 shrink-0">
             <button
               onClick={handleSave}
               disabled={!isValid}
