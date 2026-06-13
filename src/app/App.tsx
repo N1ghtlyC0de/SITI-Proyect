@@ -1,5 +1,5 @@
-import { ReactNode, useState, useEffect, Suspense, lazy } from "react";
-import { Home, ShoppingCart, Package, Clock } from "lucide-react";
+import { ReactNode, useState, useEffect, Suspense, lazy, useRef } from "react";
+import { Home, ShoppingCart, Package, Clock, X } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { getProducts, getSales, createProduct, updateProduct, deleteProduct, createSale } from "./services/fastapi";
 
@@ -166,6 +166,77 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AdminScreen | VendorScreen>("home");
   const [saleCounter, setSaleCounter] = useState(15); // mockSales end at "014"
+  const [isMobile, setIsMobile] = useState(false);
+  const [alert, setAlert] = useState<{ message: string; visible: boolean } | null>(null);
+  const [progress, setProgress] = useState(100);
+  const [isPaused, setIsPaused] = useState(false);
+  const timeLeftRef = useRef(6000);
+  const intervalRef = useRef<any>(null);
+
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const touchStartRef = useRef<number | null>(null);
+
+  const handleCloseAlert = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setAlert(prev => prev ? { ...prev, visible: false } : null);
+    setSwipeOffset(0);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (alert && alert.visible) {
+      setProgress(100);
+      timeLeftRef.current = 6000;
+      
+      intervalRef.current = setInterval(() => {
+        if (!isPaused) {
+          timeLeftRef.current -= 100;
+          setProgress((timeLeftRef.current / 6000) * 100);
+          
+          if (timeLeftRef.current <= 0) {
+            handleCloseAlert();
+          }
+        }
+      }, 100);
+    }
+    
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [alert, isPaused]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsPaused(true);
+    touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartRef.current !== null) {
+      const currentX = e.touches[0].clientX;
+      const diff = currentX - touchStartRef.current;
+      setSwipeOffset(diff);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsPaused(false);
+    if (Math.abs(swipeOffset) > 50) {
+      handleCloseAlert();
+    } else {
+      setSwipeOffset(0);
+    }
+    touchStartRef.current = null;
+  };
   const [globalState, setGlobalState] = useState<GlobalState>({
     dailyGoal: 150000,
     currentVendor: initialVendors[0],
@@ -189,9 +260,9 @@ export default function App() {
         }));
       } catch (err) {
         console.error("Backend fetch failed. Using local mock data.", err);
-        toast.error("Servidor fuera de línea. Utilizando datos locales en modo demostración.", {
-          id: "backend-offline-toast",
-          duration: 6000
+        setAlert({
+          message: "Servidor fuera de línea. Utilizando datos locales en modo demostración.",
+          visible: true
         });
       }
     }
@@ -210,7 +281,7 @@ export default function App() {
           {content}
         </Suspense>
       </main>
-      <Toaster />
+      <Toaster position={isMobile ? "top-center" : "bottom-right"} />
     </>
   );
 
@@ -535,7 +606,7 @@ export default function App() {
       {content}
       {showBottomNav && (
         <nav 
-          className="fixed bottom-0 left-0 right-0 w-full z-50 bg-white border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:hidden flex justify-around items-center py-3 text-muted-foreground" 
+          className="fixed bottom-0 left-0 right-0 w-full z-50 bg-white border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:hidden grid grid-cols-4 py-2 text-muted-foreground" 
           aria-label="Navegación móvil"
         >
           {[
@@ -550,19 +621,69 @@ export default function App() {
               <button
                 key={item.id}
                 onClick={() => setCurrentScreen(item.id as AdminScreen)}
-                className={`flex flex-col items-center gap-1 text-xs font-semibold focus:outline-none transition-colors ${
-                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                className={`flex flex-col items-center gap-1 text-xs focus:outline-none transition-all ${
+                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground font-medium"
                 }`}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
                 type="button"
               >
-                <Icon className="size-5 shrink-0" aria-hidden="true" />
+                <div className={`flex items-center justify-center rounded-full px-5 py-1 transition-all ${
+                  isActive ? "bg-primary/10 text-primary" : "bg-transparent text-muted-foreground"
+                }`}>
+                  <Icon className="size-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
+                </div>
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
+      )}
+
+      {/* Custom SystemAlert Component with lifecycle, manual close, and swipe gesture */}
+      {alert && alert.visible && (
+        <div
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className={`fixed z-50 bg-white border border-border rounded-xl shadow-lg p-4 pb-5 overflow-hidden transition-all duration-300 ${
+            isMobile 
+              ? "top-20 left-4 right-4 mx-auto max-w-sm" 
+              : "right-4 bottom-4"
+          }`}
+          style={{
+            transform: `translateX(${swipeOffset}px)`,
+            opacity: 1 - Math.min(1, Math.abs(swipeOffset) / 150),
+          }}
+        >
+          <div className="flex gap-3 items-start pr-8">
+            <div className="size-5 rounded-full bg-destructive/10 text-destructive flex items-center justify-center font-bold shrink-0 mt-0.5" role="img" aria-label="Alerta">
+              ⚠️
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm text-foreground">Alerta del Sistema</h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-normal break-words whitespace-normal">
+                {alert.message}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleCloseAlert}
+            className="absolute top-2.5 right-2.5 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Cerrar alerta"
+            type="button"
+          >
+            <X className="size-4" />
+          </button>
+          
+          <div 
+            className="absolute bottom-0 left-0 h-1 bg-destructive transition-all duration-100 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       )}
     </div>
   );

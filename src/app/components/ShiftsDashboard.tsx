@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Users, 
   ArrowLeft,
@@ -21,6 +21,29 @@ interface ShiftsDashboardProps {
 export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const [employeeCount, setEmployeeCount] = useState<number>(1);
   const [savedData, setSavedData] = useState<boolean>(false);
+
+  const [isCounterMinimized, setIsCounterMinimized] = useState(false);
+  const counterCardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsCounterMinimized(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    const currentRef = counterCardRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, []);
 
   // Store time slots. Hours are calculated automatically based on slots selected.
   const [employeeSlots, setEmployeeSlots] = useState<{ [key: number]: Set<number> }>({ 1: new Set() });
@@ -134,7 +157,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
       <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0 lg:min-h-0">
         {/* Left Column (Master Panel & Today's Shift Card) */}
         <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card lg:overflow-hidden p-4 space-y-4 lg:h-full lg:shrink-0 mb-6 lg:mb-0">
-          <div className="rounded-card bg-card p-6 shadow-sm border border-border text-center shrink-0">
+          <div ref={counterCardRef} className="rounded-card bg-card p-6 shadow-sm border border-border text-center shrink-0">
             <div className="flex justify-center mb-3">
               <div className="rounded-full bg-primary/10 p-3">
                 <Calendar className="size-6 text-primary" />
@@ -338,6 +361,42 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Minimized Floating Counter Pill for Mobile */}
+      <div 
+        className={`fixed right-4 top-20 z-40 bg-white shadow-lg rounded-full px-5 py-2.5 border border-border flex items-center gap-3 transition-all duration-300 lg:hidden ${
+          isCounterMinimized 
+            ? "translate-y-0 opacity-100 scale-100 pointer-events-auto" 
+            : "-translate-y-12 opacity-0 scale-90 pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-primary" aria-hidden="true" />
+          <span className="text-sm font-medium text-muted-foreground">Empleados:</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={handleDecrement}
+            disabled={employeeCount <= 1}
+            className="size-7 flex items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-border disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary"
+            type="button"
+            aria-label="Disminuir empleados"
+          >
+            <Minus className="size-3.5" />
+          </button>
+          <span className="font-bold tabular-nums text-sm w-4 text-center text-foreground">
+            {employeeCount}
+          </span>
+          <button 
+            onClick={handleIncrement}
+            className="size-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary"
+            type="button"
+            aria-label="Aumentar empleados"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

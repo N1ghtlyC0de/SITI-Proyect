@@ -237,8 +237,8 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar w-full">
-            <div className="flex gap-2">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 w-full">
+            <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 hide-scrollbar w-full lg:w-auto">
               <StatusChip
                 status="neutral"
                 isActive={filterStatus === "all"}
@@ -264,7 +264,7 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
             
             <button
               onClick={handleCreateClick}
-              className="bg-[#2F6B3E] hover:bg-[#23512e] text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#2F6B3E] flex items-center gap-1.5 shrink-0"
+              className="bg-[#2F6B3E] hover:bg-[#23512e] text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#2F6B3E] flex items-center justify-center gap-1.5 shrink-0 w-full lg:w-auto"
               type="button"
               aria-label="Añadir nuevo producto"
             >
