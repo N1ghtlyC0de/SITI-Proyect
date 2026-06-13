@@ -29,7 +29,7 @@ export function StatusChip({
   return (
     <button
       className={cn(
-        "px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap border shadow-sm flex items-center gap-1.5 [&>svg]:size-4 [&>svg]:text-current focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap border shadow-sm flex items-center gap-1.5 [&>svg]:size-4 [&>svg]:text-current focus:outline-none focus:ring-2 focus:ring-primary/50 first:ml-1 last:mr-1",
         isActive ? activeClasses[status] : inactiveClasses,
         className
       )}
