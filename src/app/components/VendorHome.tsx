@@ -1,10 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { Lock, LogOut } from "lucide-react";
+import { Lock, LogOut, Calculator, CheckCircle2, X } from "lucide-react";
 import { formatCurrency } from "../lib/utils";
 import { SaleRow } from "./SaleRow";
 import { HeaderNav } from "./HeaderNav";
 import { StatusBadge } from "./molecules/StatusBadge";
 import { toast } from "sonner";
+import { Modal } from "./molecules/Modal";
+import { PrimaryButton } from "./molecules/PrimaryButton";
+import { createValidation } from "../services/fastapi";
 
 const VendorSwitcher = lazy(() => import("./VendorSwitcher").then(m => ({ default: m.VendorSwitcher })));
 const SaleDetailSheet = lazy(() => import("./SaleDetailSheet").then(m => ({ default: m.SaleDetailSheet })));
@@ -46,7 +49,7 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
   const [durationString, setDurationString] = useState("3h 24min");
 
   const [businessName] = useState("Empanadas El Sabor");
-  
+
   const [showVendorSwitcher, setShowVendorSwitcher] = useState(false); // Used only if tapping inactive hero button
   const [showCloseShiftSheet, setShowCloseShiftSheet] = useState(false);
   const [postShiftData, setPostShiftData] = useState<{
@@ -59,6 +62,10 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
   const [showCriticalStock, setShowCriticalStock] = useState(false);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(dailyGoal.toString());
+
+  const [showValidator, setShowValidator] = useState(false);
+  const [cashInRegister, setCashInRegister] = useState("");
+  const [validationResult, setValidationResult] = useState<"none" | "match" | "mismatch">("none");
 
   // Update duration string
   useEffect(() => {
@@ -130,6 +137,43 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
   }, 0);
   const utilidad = totalVendido - costoTotal;
 
+  // Calculate cash sales (case-insensitive comparison)
+  const cashSales = validSales.filter(sale => (sale.paymentMethod || "").toLowerCase() === "efectivo");
+  const totalCashExpected = cashSales.reduce((sum, sale) => sum + sale.total, 0);
+
+  const handleValidateCash = async () => {
+    const cashInput = parseFloat(cashInRegister);
+    if (isNaN(cashInput)) return;
+
+    const diff = cashInput - totalCashExpected;
+    let status = "match";
+    if (diff < -0.01) status = "short";
+    else if (diff > 0.01) status = "over";
+
+    try {
+      await createValidation({
+        total_expected: totalCashExpected,
+        total_physical: cashInput,
+        difference: Math.abs(diff),
+        status: status
+      });
+    } catch(e) {
+      console.error("Failed to save validation to backend", e);
+    }
+
+    if (status === "match") {
+      setValidationResult("match");
+    } else {
+      setValidationResult("mismatch");
+    }
+  };
+
+  const closeValidator = () => {
+    setShowValidator(false);
+    setCashInRegister("");
+    setValidationResult("none");
+  };
+
   const ultimasVentas = sales.slice(0, 4);
 
   // Alertas: solo mostrar las que aplican
@@ -151,7 +195,7 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted" style={{ width: "100%" }}>
+    <div className="flex h-screen flex-col bg-muted overflow-hidden" style={{ width: "100%" }}>
       {/* 1. Status Bar */}
       <header
         className="sticky top-0 z-30 flex items-center justify-between px-4 bg-primary text-primary-foreground flex-shrink-0 w-full"
@@ -176,7 +220,7 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
         </div>
 
         {/* Center Section - Navigation */}
-        <div className="flex justify-center shrink-0 mx-2">
+        <div className="hidden lg:flex justify-center shrink-0 mx-2">
           <HeaderNav active="home" onNavigate={onNavigate} />
         </div>
 
@@ -190,6 +234,19 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
             aria-label={cajaAbierta ? "Caja abierta" : "Caja cerrada"}
             role="status"
           />
+          <span className="text-xs text-white font-medium bg-white/10 px-2 py-1 rounded-md shrink-0">
+            Turno: {durationString}
+          </span>
+          {cajaAbierta && (
+            <button
+              onClick={() => setShowCloseShiftSheet(true)}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 flex items-center gap-1 shrink-0"
+              type="button"
+              aria-label="Cerrar turno actual"
+            >
+              <span aria-hidden="true">✕</span> Cerrar turno
+            </button>
+          )}
           <button
             onClick={onLogout}
             className="p-2 rounded-full hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 shrink-0"
@@ -201,89 +258,89 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
         </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto pb-10 pt-0">
-        {/* 2. Hero Button */}
-        <div className="mx-4 my-3.5">
-          <button
-            onClick={cajaAbierta ? onNewSale : () => setShowVendorSwitcher(true)}
-            aria-label={cajaAbierta ? "Iniciar nueva venta" : "Activar sistema"}
-            type="button"
-            className={`w-full flex items-center justify-between transition-all active:scale-98 focus:outline-none focus:ring-4 rounded-2xl min-h-[80px] px-6 py-4 border-2 border-transparent ${
-              cajaAbierta
-                ? "bg-primary text-primary-foreground shadow-lg focus:ring-primary/30"
-                : "bg-foreground text-background shadow-md focus:ring-foreground/30"
-            }`}
-          >
-            <div className="text-left">
-              <div className="text-xl font-bold leading-tight mb-1">
-                {cajaAbierta ? "Nueva venta" : "Sistema en reposo"}
-              </div>
-              <div className="text-sm opacity-90 leading-snug">
-                {cajaAbierta ? "Registra una nueva transacción" : "Toca para activar"}
-              </div>
-            </div>
-            {cajaAbierta ? (
-              <span className="text-4xl" aria-hidden="true">🛒</span>
-            ) : (
-              <div className="flex items-center justify-center bg-white/15 size-12 rounded-xl">
-                <Lock className="size-6" aria-hidden="true" />
-              </div>
-            )}
-          </button>
-        </div>
-
-        {/* 3. Stats Row */}
-        <div className="px-4 mb-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:gap-3">
-            <div className="bg-card rounded-card p-3 shadow-sm">
-              <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
-                VENDIDO
-              </div>
-              <div className="text-lg font-bold text-foreground tabular-nums">
-                ${(totalVendido / 1000).toFixed(0)}k
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {formatCurrency(totalVendido)}
-              </div>
-            </div>
-
-            <div className="bg-card rounded-card p-3 shadow-sm">
-              <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
-                VENTAS
-              </div>
-              <div className="text-lg font-bold text-foreground tabular-nums">
-                {ventasRealizadas}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                registradas
-              </div>
-            </div>
-
-            <div className="bg-card rounded-card p-3 shadow-sm">
-              <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
-                UTILIDAD
-              </div>
-              <div
-                className={`text-lg font-bold tabular-nums ${
-                  utilidad > 0 ? "text-success" : utilidad < 0 ? "text-destructive" : "text-foreground"
+      {/* Main Content Body constrained to viewport */}
+      <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-4 flex flex-col pb-4">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 lg:overflow-hidden h-full">
+          
+          {/* Left Column (Primary Actions & KPIs) - 8 columns on desktop */}
+          <div className="lg:col-span-8 flex flex-col gap-6 h-full lg:overflow-y-auto pr-1 pb-4">
+            
+            {/* 2. Hero Button (Nueva Venta / Inactivo) */}
+            <div>
+              <button
+                onClick={cajaAbierta ? onNewSale : () => setShowVendorSwitcher(true)}
+                aria-label={cajaAbierta ? "Iniciar nueva venta" : "Activar sistema"}
+                type="button"
+                className={`w-full flex items-center justify-between transition-all active:scale-98 focus:outline-none focus:ring-4 rounded-2xl min-h-[80px] px-6 py-4 border-2 border-transparent ${
+                  cajaAbierta
+                    ? "bg-primary text-primary-foreground shadow-lg focus:ring-primary/30"
+                    : "bg-foreground text-background shadow-md focus:ring-foreground/30"
                 }`}
               >
-                ${(utilidad / 1000).toFixed(0)}k
+                <div className="text-left">
+                  <div className="text-xl font-bold leading-tight mb-1">
+                    {cajaAbierta ? "Nueva venta" : "Sistema en reposo"}
+                  </div>
+                  <div className="text-sm opacity-90 leading-snug">
+                    {cajaAbierta ? "Registra una nueva transacción" : "Toca para activar"}
+                  </div>
+                </div>
+                {cajaAbierta ? (
+                  <span className="text-4xl" aria-hidden="true">🛒</span>
+                ) : (
+                  <div className="flex items-center justify-center bg-white/15 size-12 rounded-xl">
+                    <Lock className="size-6" aria-hidden="true" />
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* 3. Stats Row (arranged side-by-side inside grid row) */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:gap-3 shrink-0">
+              <div className="bg-card rounded-card p-3 shadow-sm border border-border/40">
+                <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
+                  VENDIDO
+                </div>
+                <div className="text-lg font-bold text-foreground tabular-nums">
+                  ${(totalVendido / 1000).toFixed(0)}k
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatCurrency(totalVendido)}
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {formatCurrency(utilidad)}
+
+              <div className="bg-card rounded-card p-3 shadow-sm border border-border/40">
+                <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
+                  VENTAS
+                </div>
+                <div className="text-lg font-bold text-foreground tabular-nums">
+                  {ventasRealizadas}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  registradas
+                </div>
+              </div>
+
+              <div className="bg-card rounded-card p-3 shadow-sm border border-border/40">
+                <div className="text-xs uppercase text-muted-foreground mb-1 tracking-wide font-semibold">
+                  UTILIDAD
+                </div>
+                <div
+                  className={`text-lg font-bold tabular-nums ${
+                    utilidad > 0 ? "text-success" : utilidad < 0 ? "text-destructive" : "text-foreground"
+                  }`}
+                >
+                  ${(utilidad / 1000).toFixed(0)}k
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatCurrency(utilidad)}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* 4. Alerts and Goal */}
-        <div className="px-4 mb-4">
-          <div className="space-y-2">
-            {/* Meta Diaria */}
-            <div className="bg-card rounded-card p-3 shadow-sm">
-              <div className="flex justify-between items-center mb-2">
+            {/* 4. Daily Goal Panel */}
+            <div className="bg-card rounded-card p-4 shadow-sm border border-border shrink-0">
+              <div className="flex justify-between items-center mb-3">
                 <h2 className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">
                   Meta Diaria
                 </h2>
@@ -299,40 +356,43 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
                     </button>
                     {isEditingGoal ? (
                       <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          const newGoal = parseFloat(goalInput);
-                          if (!isNaN(newGoal) && newGoal >= 0) {
-                            onSetDailyGoal?.(newGoal);
-                          } else {
-                            toast.error("La meta diaria no puede ser negativa.");
+                        <button
+                          onClick={() => {
+                            const newGoal = parseFloat(goalInput);
+                            if (!isNaN(newGoal) && newGoal >= 0) {
+                              onSetDailyGoal?.(newGoal);
+                            } else {
+                              toast.error("La meta diaria no puede ser negativa.");
+                              setGoalInput(dailyGoal.toString());
+                              setIsEditingGoal(false);
+                              return;
+                            }
+                            setIsEditingGoal(false);
+                          }}
+                          className="text-xs text-success font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-1 rounded px-1"
+                          type="button"
+                          aria-label="Guardar meta diaria"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          onClick={() => {
                             setGoalInput(dailyGoal.toString());
                             setIsEditingGoal(false);
-                            return;
-                          }
-                          setIsEditingGoal(false);
-                        }}
-                        className="text-xs text-success font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-1 rounded px-1"
-                        type="button"
-                        aria-label="Guardar meta diaria"
-                      >
-                        Guardar
-                      </button>
-                      <button
-                        onClick={() => {
-                          setGoalInput(dailyGoal.toString());
-                          setIsEditingGoal(false);
-                        }}
-                        className="text-xs text-destructive font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 rounded px-1"
-                        type="button"
-                        aria-label="Cancelar edición"
-                      >
-                        Cancelar
-                      </button>
+                          }}
+                          className="text-xs text-destructive font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1 rounded px-1"
+                          type="button"
+                          aria-label="Cancelar edición"
+                        >
+                          Cancelar
+                        </button>
                       </div>
                     ) : (
                       <button
-                        onClick={() => setIsEditingGoal(true)}
+                        onClick={() => {
+                          setGoalInput(dailyGoal.toString());
+                          setIsEditingGoal(true);
+                        }}
                         className="text-xs text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded px-1"
                         type="button"
                         aria-label="Editar meta diaria"
@@ -345,19 +405,23 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
               </div>
               
               {isEditingGoal ? (
-                <input
-                  type="number"
-                  min="0"
-                  value={goalInput}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (val < 0) return;
-                    setGoalInput(e.target.value);
-                  }}
-                  className="w-full p-2 rounded-lg border border-border text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  autoFocus
-                  aria-label="Meta Diaria"
-                />
+                <div className="relative w-full">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold text-muted-foreground pointer-events-none">
+                    $
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={goalInput ? new Intl.NumberFormat('es-CO').format(parseInt(goalInput, 10)) : ""}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, '');
+                      setGoalInput(rawValue);
+                    }}
+                    className="w-full pl-8 pr-3 py-2.5 rounded-lg border border-border text-base font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    autoFocus
+                    aria-label="Meta Diaria"
+                  />
+                </div>
               ) : (
                 <>
                   <div className="flex items-end gap-2 mb-2">
@@ -385,8 +449,33 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
               )}
             </div>
 
+            {/* Consolidated Validador de caja banner - Streamlined Horizontal Notification Bar */}
+            <div className="rounded-lg border border-border bg-card px-4 py-2.5 shadow-xs flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <Calculator className="size-4 text-primary shrink-0" />
+                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                  <span className="text-base font-semibold text-foreground">Validador de caja</span>
+                  <span className="text-base text-muted-foreground hidden sm:inline">|</span>
+                  <span className="text-base text-muted-foreground">Compara el efectivo físico contra el esperado del sistema.</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowValidator(true)}
+                className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+                type="button"
+              >
+                Validar Caja
+              </button>
+            </div>
+
+          </div>
+
+          {/* Right Column (Real-Time Feeds & Alerts) - 4 columns on desktop */}
+          <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:overflow-hidden min-h-0 pb-4">
+            
+            {/* Stock Crítico & Sales Alerts */}
             {hasAlerts && (
-              <>
+              <div className="flex-shrink-0 space-y-2">
                 {inventoryLowItems > 0 && (
                   <div className="flex flex-col gap-2">
                     <button
@@ -401,7 +490,7 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
                     {showCriticalStock && (
                       <div
                         id="critical-stock-list"
-                        className="space-y-2 pl-3"
+                        className="space-y-2 pl-3 max-h-[140px] overflow-y-auto pr-1"
                         role="region"
                         aria-label="Lista de productos con stock crítico"
                       >
@@ -427,82 +516,58 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
                     ⛔ No hay ventas registradas hoy
                   </div>
                 )}
-              </>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* 5. Últimas ventas */}
-        <div className="px-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">
-              Últimas ventas
-            </h2>
-            <button
-              onClick={() => onNavigate?.("sales-history")}
-              className="text-xs text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded px-1"
-              type="button"
-              aria-label="Ver historial completo de ventas"
-            >
-              Ver todo
-            </button>
+            {/* 5. Últimas ventas (localized overflow scroll feed) */}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-3 shrink-0">
+                <h2 className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">
+                  Últimas ventas
+                </h2>
+                <button
+                  onClick={() => onNavigate?.("sales-history")}
+                  className="text-xs text-primary font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded px-1"
+                  type="button"
+                  aria-label="Ver historial completo de ventas"
+                >
+                  Ver todo
+                </button>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                {ultimasVentas.length > 0 ? (
+                  <div className="bg-card rounded-card overflow-hidden shadow-sm border border-border/40">
+                    {ultimasVentas.map((sale) => (
+                      <SaleRow
+                        key={sale.id}
+                        id={sale.id}
+                        time={sale.time}
+                        total={sale.total}
+                        paymentMethod={sale.paymentMethod}
+                        products={sale.products}
+                        status={sale.status}
+                        onClick={() => setSelectedSale(sale)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-card rounded-card p-8 text-center shadow-sm border border-border/40">
+                    <div className="text-4xl mb-2" role="img" aria-label="Sin ventas">📋</div>
+                    <p className="text-sm text-muted-foreground">
+                      No hay ventas registradas
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
-          {ultimasVentas.length > 0 ? (
-            <div className="bg-card rounded-card overflow-hidden shadow-sm">
-              {ultimasVentas.map((sale) => (
-                <SaleRow
-                  key={sale.id}
-                  id={sale.id}
-                  time={sale.time}
-                  total={sale.total}
-                  paymentMethod={sale.paymentMethod}
-                  products={sale.products}
-                  status={sale.status}
-                  onClick={() => setSelectedSale(sale)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-card rounded-card p-8 text-center shadow-sm">
-              <div className="text-4xl mb-2" role="img" aria-label="Sin ventas">📋</div>
-              <p className="text-sm text-muted-foreground">
-                No hay ventas registradas
-              </p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* 6. Shift Bar */}
-      <div
-        className="sticky bottom-0 bg-card border-t border-border py-1.5 px-4 flex items-center justify-between z-30"
-        role="contentinfo"
-        aria-label="Información de turno actual"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">{currentVendor.emoji}</span>
-          <div>
-            <div className="text-sm font-bold text-foreground leading-tight">
-              {currentVendor.name}
-            </div>
-            <div className="text-xs text-muted-foreground leading-tight">
-              Turno: {durationString}
-            </div>
-          </div>
-        </div>
 
-        {cajaAbierta && (
-          <button
-            onClick={() => setShowCloseShiftSheet(true)}
-            className="bg-card border border-border rounded-lg px-3 py-1 text-xs font-semibold text-foreground flex items-center gap-1 transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-1"
-            type="button"
-            aria-label="Cerrar turno actual"
-          >
-            <span aria-hidden="true">✕</span> Cerrar turno
-          </button>
-        )}
-      </div>
 
       <Suspense fallback={null}>
         {showCloseShiftSheet && (
@@ -543,6 +608,137 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
           />
         )}
       </Suspense>
+
+      <Modal
+        isOpen={showValidator}
+        onClose={closeValidator}
+        title="Validador de caja"
+        size="md"
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="size-5 text-primary" />
+            <p className="text-sm text-muted-foreground">Compara el efectivo real contra el total esperado del sistema.</p>
+          </div>
+
+          <div>
+            <label htmlFor="cash-in-register" className="mb-2 block text-sm font-medium text-muted-foreground">
+              Efectivo Físico
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground pointer-events-none">
+                $
+              </span>
+              <input
+                id="cash-in-register"
+                type="text"
+                inputMode="numeric"
+                value={cashInRegister ? new Intl.NumberFormat('es-CO').format(parseInt(cashInRegister, 10)) : ""}
+                onChange={(e) => {
+                  const rawValue = e.target.value.replace(/\D/g, '');
+                  setCashInRegister(rawValue);
+                }}
+                placeholder="0"
+                className="w-full rounded-lg border border-border bg-background pl-8 pr-4 py-3 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+            <span className="text-sm text-muted-foreground">Efectivo esperado (sistema)</span>
+            <span className="text-sm font-bold">{formatCurrency(totalCashExpected)}</span>
+          </div>
+
+          <PrimaryButton
+            onClick={handleValidateCash}
+            disabled={!cashInRegister}
+            className="w-full px-6 py-3"
+            type="button"
+          >
+            Validar caja
+          </PrimaryButton>
+        </div>
+      </Modal>
+
+      {/* Validation Result Modal - Match */}
+      <Modal
+        isOpen={validationResult === "match"}
+        onClose={() => setValidationResult("none")}
+        size="sm"
+        showCloseButton={false}
+      >
+        <div className="flex flex-col items-center text-center">
+          <CheckCircle2 className="size-16 text-success mb-4" aria-hidden="true" />
+          <h3 className="text-lg font-semibold mb-2">
+            ¡La caja coincide con las ventas registradas!
+          </h3>
+          <button
+            onClick={() => setValidationResult("none")}
+            className="w-full mt-4 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring"
+            type="button"
+          >
+            Aceptar
+          </button>
+        </div>
+      </Modal>
+
+      {/* Validation Result Modal - Mismatch */}
+      <Modal
+        isOpen={validationResult === "mismatch"}
+        onClose={() => setValidationResult("none")}
+        title="La caja no coincide con los valores registrados"
+        size="md"
+      >
+        <div>
+          <p className="text-sm text-muted-foreground mb-6">
+            Revisa las ventas en efectivo del día
+          </p>
+
+          <div>
+            <h4 className="text-sm font-semibold mb-3">Ventas en efectivo</h4>
+            <div className="space-y-2 mb-6">
+              {cashSales.map((sale) => (
+                <div key={sale.id} className="p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      {sale.products?.map((product: any, idx: number) => (
+                        <div key={`${product.id}-${idx}`} className="text-sm">
+                          <span className="font-medium">{product.name}</span>
+                          <span className="text-muted-foreground"> x{product.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <span className="text-sm font-bold">{formatCurrency(sale.total)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(sale.time).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Total según sistema:</span>
+                <span className="text-sm font-bold">{formatCurrency(totalCashExpected)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Total reportado en caja:</span>
+                <span className="text-sm font-bold">{formatCurrency(parseFloat(cashInRegister) || 0)}</span>
+              </div>
+              <div className="pt-3 border-t border-destructive/20">
+                <div className="flex justify-between">
+                  <span className="text-sm font-semibold">Diferencia:</span>
+                  <span className="text-sm font-bold text-destructive">
+                    {formatCurrency(Math.abs(totalCashExpected - (parseFloat(cashInRegister) || 0)))}
+                    {totalCashExpected > (parseFloat(cashInRegister) || 0) ? " (faltante)" : " (sobrante)"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
     </div>
   );

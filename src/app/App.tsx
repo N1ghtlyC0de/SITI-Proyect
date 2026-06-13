@@ -1,4 +1,5 @@
 import { ReactNode, useState, useEffect, Suspense, lazy } from "react";
+import { Home, ShoppingCart, Package, Clock } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { getProducts, getSales, createProduct, updateProduct, deleteProduct, createSale } from "./services/fastapi";
 
@@ -13,9 +14,28 @@ const SalesHistory = lazy(() => import("./components/SalesHistory").then(m => ({
 const ProfileManagement = lazy(() => import("./components/ProfileManagement").then(m => ({ default: m.ProfileManagement })));
 const ApiIntegrationPage = lazy(() => import("./components/pages/ApiIntegrationPage").then(m => ({ default: m.ApiIntegrationPage })));
 
+import { toast } from "sonner";
+
 const LoadingFallback = () => (
-  <div className="flex h-screen w-full items-center justify-center bg-muted">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  <div className="flex flex-col min-h-screen bg-muted animate-pulse">
+    {/* Header Skeleton */}
+    <div className="h-16 bg-[#2F6B3E]/80 w-full" />
+    
+    {/* Content Skeleton */}
+    <div className="flex-1 p-6 space-y-6">
+      {/* KPI Cards Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-24 bg-card rounded-xl border border-border" />
+        ))}
+      </div>
+      
+      {/* Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-[350px] bg-card rounded-xl border border-border" />
+        <div className="h-[350px] bg-card rounded-xl border border-border" />
+      </div>
+    </div>
   </div>
 );
 
@@ -169,6 +189,10 @@ export default function App() {
         }));
       } catch (err) {
         console.error("Backend fetch failed. Using local mock data.", err);
+        toast.error("Servidor fuera de línea. Utilizando datos locales en modo demostración.", {
+          id: "backend-offline-toast",
+          duration: 6000
+        });
       }
     }
     loadData();
@@ -504,5 +528,42 @@ export default function App() {
     );
   }
 
-  return renderWithA11y(content);
+  const showBottomNav = isLoggedIn && isAdmin && ["home", "sales", "inventory", "shifts"].includes(currentScreen);
+
+  return renderWithA11y(
+    <div className={`w-full min-h-screen ${showBottomNav ? "pb-20 lg:pb-0" : ""}`}>
+      {content}
+      {showBottomNav && (
+        <nav 
+          className="fixed bottom-0 left-0 right-0 w-full z-50 bg-white border-t border-border shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:hidden flex justify-around items-center py-3 text-muted-foreground" 
+          aria-label="Navegación móvil"
+        >
+          {[
+            { id: "home", label: "Inicio", icon: Home },
+            { id: "sales", label: "Ventas", icon: ShoppingCart },
+            { id: "inventory", label: "Inventario", icon: Package },
+            { id: "shifts", label: "Turnos", icon: Clock },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = currentScreen === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setCurrentScreen(item.id as AdminScreen)}
+                className={`flex flex-col items-center gap-1 text-xs font-semibold focus:outline-none transition-colors ${
+                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+                type="button"
+              >
+                <Icon className="size-5 shrink-0" aria-hidden="true" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+    </div>
+  );
 }
