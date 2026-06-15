@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, Minus, Plus, Trash2 } from "lucide-react";
 import { SaleSuccessModal } from "./SaleSuccessModal";
 import { formatCurrency } from "../lib/utils";
@@ -15,7 +15,7 @@ interface CartItemData {
 
 interface NewSaleProps {
   inventory?: any[];
-  onCompleteSale?: (cart: any[], total: number, paymentMethod: string, amountReceived?: number) => void;
+  onCompleteSale?: (cart: any[], total: number, paymentMethod: string, amountReceived?: number, transferApp?: string) => void;
   onBack?: () => void;
 }
 
@@ -25,10 +25,27 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
   const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItemData[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [transferApp, setTransferApp] = useState<string | null>(null);
   const [amountReceived, setAmountReceived] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [confirmedSaleId, setConfirmedSaleId] = useState<string | null>(null);
+
+  const transferSubSectionRef = useRef<HTMLDivElement>(null);
+  const cashSubSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (paymentMethod === "Transferencia") {
+      setTimeout(() => {
+        transferSubSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+    } else if (paymentMethod === "Efectivo") {
+      setTimeout(() => {
+        cashSubSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+    }
+  }, [paymentMethod]);
 
   const availableProducts = inventory.map(item => ({
     id: item.id,
@@ -109,11 +126,12 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
   const handleClearCart = () => {
     setCart([]);
     setPaymentMethod(null);
+    setTransferApp(null);
     setAmountReceived("");
     setShowMobileCart(false);
   };
 
-  const handleConfirmSale = () => {
+  const handleConfirmSale = async () => {
     if (!canConfirm) return;
 
     // Validar stock final antes de confirmar
@@ -125,7 +143,20 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
       }
     }
 
-    onCompleteSale?.(cart, total, paymentMethod!, paymentMethod === "Efectivo" ? amountValue : undefined);
+    try {
+      const resultId = await onCompleteSale?.(
+        cart,
+        total,
+        paymentMethod!,
+        paymentMethod === "Efectivo" ? amountValue : undefined,
+        paymentMethod === "Transferencia" ? transferApp || undefined : undefined
+      );
+      if (resultId) {
+        setConfirmedSaleId(resultId);
+      }
+    } catch (e) {
+      console.error("Failed to complete sale:", e);
+    }
     setShowSuccess(true);
     setShowMobileCart(false);
   };
@@ -134,6 +165,7 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
     setCart([]);
     setAmountReceived("");
     setPaymentMethod(null);
+    setTransferApp(null);
     setShowSuccess(false);
   };
 
@@ -154,7 +186,11 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
     buttonText = "#BDBDBA";
     buttonLabel = "Selecciona el método de pago";
   } else if (cart.length > 0 && paymentMethod) {
-    if (paymentMethod === "Efectivo") {
+    if (paymentMethod === "Transferencia" && !transferApp) {
+      buttonBg = "#E8E8E5";
+      buttonText = "#BDBDBA";
+      buttonLabel = "Selecciona la app de transferencia";
+    } else if (paymentMethod === "Efectivo") {
       if (!amountReceived || amountValue === 0) {
         buttonBg = "#E8E8E5";
         buttonText = "#BDBDBA";
@@ -182,8 +218,8 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
   const getCartQuantity = (productId: string) => cart.find(item => item.id === productId)?.quantity || 0;
   const hasCartItems = cart.length > 0;
 
-  const cartPanelContent = (
-    <>
+  const cartMainScrollContent = (
+    <div className="flex-1 overflow-y-auto min-h-0">
       <div style={{
         padding: "14px 16px",
         borderBottom: "0.5px solid #E8E8E5",
@@ -245,8 +281,8 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
                     onClick={() => handleQuantityChange(item.id, -1)}
                     className="transition-all hover:opacity-90 active:scale-95"
                     style={{
-                      width: "26px",
-                      height: "26px",
+                      width: "24px",
+                      height: "24px",
                       borderRadius: "50%",
                       border: "none",
                       backgroundColor: "#2F6B3E",
@@ -267,8 +303,8 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
                     disabled={isAtMaxStock}
                     className="transition-all hover:opacity-90 active:scale-95"
                     style={{
-                      width: "26px",
-                      height: "26px",
+                      width: "24px",
+                      height: "24px",
                       borderRadius: "50%",
                       border: "none",
                       backgroundColor: "#2F6B3E",
@@ -327,7 +363,12 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
           {(["Efectivo", "Transferencia", "Tarjeta débito", "Tarjeta crédito"] as PaymentMethod[]).map(method => (
             <button
               key={method}
-              onClick={() => setPaymentMethod(method)}
+              onClick={() => {
+                setPaymentMethod(method);
+                if (method !== "Transferencia") {
+                  setTransferApp(null);
+                }
+              }}
               disabled={!hasCartItems}
               style={{
                 padding: "10px",
@@ -347,8 +388,47 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
           ))}
         </div>
 
+        {paymentMethod === "Transferencia" && hasCartItems && (
+          <div ref={transferSubSectionRef} className="mb-3">
+            <div style={{
+              fontSize: "10px",
+              textTransform: "uppercase",
+              color: "#757572",
+              fontWeight: 600,
+              letterSpacing: "0.5px",
+              marginBottom: "8px"
+            }}>
+              Seleccionar App de Transferencia
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {["Nequi", "Daviplata", "Bre-b", "Otro banco"].map(app => {
+                const isActive = transferApp === app;
+                return (
+                  <button
+                    key={app}
+                    onClick={() => setTransferApp(app)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "20px",
+                      border: `1.5px solid ${isActive ? "#2F6B3E" : "#E8E8E5"}`,
+                      backgroundColor: isActive ? "#F0FAF4" : "white",
+                      fontSize: "11px",
+                      fontWeight: isActive ? 700 : 500,
+                      color: isActive ? "#2F6B3E" : "#1A1A19",
+                      cursor: "pointer"
+                    }}
+                    type="button"
+                  >
+                    {app}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {paymentMethod === "Efectivo" && hasCartItems && (
-          <div className="space-y-2">
+          <div ref={cashSubSectionRef} className="space-y-2">
             <label htmlFor="amount-received" style={{ fontSize: "14px", fontWeight: 600, color: "#1A1A19", display: "block", marginBottom: "8px" }}>
               Monto recibido en efectivo
             </label>
@@ -416,53 +496,55 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
           </div>
         )}
       </div>
+    </div>
+  );
 
-      <div style={{ padding: "10px 16px", borderTop: "0.5px solid #E8E8E5" }}>
-        <div style={{
-          backgroundColor: "#1A1A19",
-          borderRadius: "14px",
-          padding: "12px 16px",
-          marginBottom: "10px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between"
+  const cartStickyFooter = (
+    <div className="flex-shrink-0 pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] bg-white" style={{ padding: "14px 16px", borderTop: "1px solid #E8E8E5" }}>
+      <div style={{
+        backgroundColor: "#1A1A19",
+        borderRadius: "14px",
+        padding: "12px 16px",
+        marginBottom: "10px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between"
+      }}>
+        <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)" }}>
+          Total venta
+        </span>
+        <span style={{
+          fontSize: "24px",
+          fontWeight: 700,
+          color: "white",
+          fontVariantNumeric: "tabular-nums"
         }}>
-          <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)" }}>
-            Total venta
-          </span>
-          <span style={{
-            fontSize: "24px",
-            fontWeight: 700,
-            color: "white",
-            fontVariantNumeric: "tabular-nums"
-          }}>
-            {formatCurrency(total)}
-          </span>
-        </div>
-
-        <button
-          onClick={handleConfirmSale}
-          disabled={!canConfirm}
-          aria-label={buttonLabel}
-          style={{
-            width: "100%",
-            minHeight: "56px",
-            padding: "16px 24px",
-            borderRadius: "14px",
-            fontSize: "17px",
-            fontWeight: 700,
-            backgroundColor: buttonBg,
-            color: buttonText,
-            border: `2px solid ${buttonBorder}`,
-            cursor: canConfirm ? "pointer" : "not-allowed",
-            transition: "all 0.2s ease"
-          }}
-          type="button"
-        >
-          {buttonLabel}
-        </button>
+          {formatCurrency(total)}
+        </span>
       </div>
-    </>
+
+      <button
+        onClick={handleConfirmSale}
+        disabled={!canConfirm}
+        aria-label={buttonLabel}
+        style={{
+          width: "100%",
+          minHeight: "56px",
+          padding: "16px 24px",
+          borderRadius: "14px",
+          fontSize: "17px",
+          fontWeight: 700,
+          backgroundColor: buttonBg,
+          color: buttonText,
+          border: `2px solid ${buttonBorder}`,
+          cursor: canConfirm ? "pointer" : "not-allowed",
+          transition: "all 0.2s ease"
+        }}
+        type="button"
+      >
+        {buttonLabel}
+      </button>
+    </div>
   );
 
   return (
@@ -529,15 +611,16 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
                 const displayStock = Math.max(0, product.stock - cartQty);
                 return (
                   <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    emoji={product.emoji}
-                    price={product.price}
-                    stock={displayStock}
-                    isInCart={isInCart(product.id)}
-                    cartQuantity={cartQty}
-                    onClick={() => handleAddToCart(product)}
+                     key={product.id}
+                     id={product.id}
+                     name={product.name}
+                     emoji={product.emoji}
+                     price={product.price}
+                     stock={displayStock}
+                     lowStockThreshold={product.lowStockThreshold}
+                     isInCart={isInCart(product.id)}
+                     cartQuantity={cartQty}
+                     onClick={() => handleAddToCart(product)}
                   />
                 );
               })}
@@ -546,8 +629,9 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
         </div>
 
         {/* Desktop Sidebar: Expanded Cart Sidebar (hidden on smaller screens) */}
-        <aside className="hidden lg:block lg:w-[380px] lg:border-l lg:border-[#E8E8E5] lg:bg-white lg:overflow-y-auto flex-shrink-0">
-          {cartPanelContent}
+        <aside className="hidden lg:flex lg:flex-col lg:w-[380px] lg:border-l lg:border-[#E8E8E5] lg:bg-white lg:overflow-hidden flex-shrink-0 h-full">
+          {cartMainScrollContent}
+          {cartStickyFooter}
         </aside>
       </div>
 
@@ -592,9 +676,10 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
               </button>
             </div>
 
-            {/* Inner cart contents (Scrollable) */}
-            <div className="overflow-y-auto flex-1 pb-8">
-              {cartPanelContent}
+            {/* Inner cart contents (Sticky footer & scroll layout) */}
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {cartMainScrollContent}
+              {cartStickyFooter}
             </div>
           </div>
         </div>
@@ -602,7 +687,7 @@ export function NewSale({ inventory = [], onCompleteSale, onBack }: NewSaleProps
 
       {showSuccess && (
         <SaleSuccessModal
-          ticketNumber={Math.random().toString(36).substring(2, 8).toUpperCase()}
+          ticketNumber={confirmedSaleId || Math.random().toString(36).substring(2, 8).toUpperCase()}
           total={total}
           paymentMethod={paymentMethod || "Efectivo"}
           onNewSale={handleNewSale}

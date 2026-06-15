@@ -8,6 +8,11 @@ const env = typeof import.meta !== "undefined" ? import.meta.env : undefined;
 export const API_BASE_URL = env?.VITE_API_BASE_URL || DEFAULT_BASE_URL;
 export const API_MODE: ApiMode = env?.VITE_API_MODE === "graphql" ? "graphql" : "rest";
 
+console.log(
+  `[API Client] Initialized with API_BASE_URL: ${API_BASE_URL}. ` +
+  `If requests fail with net::ERR_CONNECTION_REFUSED, please make sure your backend server (e.g. running on port 4100) is booted.`
+);
+
 function normalizePath(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;

@@ -9,6 +9,7 @@ export interface ApiProduct {
     image?: string;
     price: number;
     emoji?: string;
+    lowStockThreshold?: number;
 }
 
 export interface ApiSaleItem {
@@ -31,6 +32,7 @@ export interface ApiSale {
     vendorName?: string;
     amountReceived?: number;
     change?: number;
+    transferApp?: string;
     products: ApiSaleItem[];
 }
 

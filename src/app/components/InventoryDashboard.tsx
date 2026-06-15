@@ -36,6 +36,7 @@ interface Product {
   image: string;
   price: number;
   emoji?: string;
+  lowStockThreshold: number;
 }
 
 interface InventoryDashboardProps {
@@ -51,18 +52,23 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
   const [sortBy, setSortBy] = useState("name-asc");
   const [filterStatus, setFilterStatus] = useState<"all" | "escasos" | "agotados">("all");
   
-  type EditingProduct = Omit<Product, "stock" | "price"> & { stock: string | number; price: string | number };
+  type EditingProduct = Omit<Product, "stock" | "price" | "lowStockThreshold"> & { 
+    stock: string | number; 
+    price: string | number; 
+    lowStockThreshold: string | number; 
+  };
   const [editingProduct, setEditingProduct] = useState<EditingProduct | null>(null);
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const filteredProducts = inventory.filter(p => {
-    if (filterStatus === "escasos") {
-      if (p.status !== "warning" && p.status !== "critical" && p.stock !== 0) return false;
-      if (p.stock === 0) return false; // Agotados aren't just "escasos"
-    }
-    if (filterStatus === "agotados" && p.stock !== 0) return false;
+    const isAgotado = p.stock === 0;
+    const isEscaso = p.stock <= p.lowStockThreshold && p.stock > 0;
+
+    if (filterStatus === "escasos" && !isEscaso) return false;
+    if (filterStatus === "agotados" && !isAgotado) return false;
 
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           p.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -91,7 +97,8 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
       status: "good",
       image: "",
       price: "",
-      emoji: "📦"
+      emoji: "📦",
+      lowStockThreshold: 10
     });
     setIsCreatingNew(true);
   };
@@ -106,13 +113,15 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
         stock: Number(editingProduct.stock) || 0,
         image: editingProduct.image,
         price: Number(editingProduct.price) || 0,
-        emoji: editingProduct.emoji
+        emoji: editingProduct.emoji,
+        lowStockThreshold: Number(editingProduct.lowStockThreshold) || 10
       });
     } else {
       onUpdateProduct?.(editingProduct.id, {
         ...editingProduct,
         stock: Number(editingProduct.stock) || 0,
-        price: Number(editingProduct.price) || 0
+        price: Number(editingProduct.price) || 0,
+        lowStockThreshold: Number(editingProduct.lowStockThreshold) || 10
       } as Product);
     }
 
@@ -165,7 +174,7 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
             </div>
             <div className="w-px bg-border"></div>
             <div className="flex-1 text-center">
-              <p className="text-2xl font-bold text-warning">{inventory.filter(p => p.status === "warning" || p.status === "critical").length}</p>
+              <p className="text-2xl font-bold text-warning">{inventory.filter(p => p.stock <= p.lowStockThreshold && p.stock > 0).length}</p>
               <p className="text-xs text-muted-foreground">Por agotarse</p>
             </div>
             <div className="w-px bg-border"></div>
@@ -274,49 +283,73 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className={`flex items-center gap-4 p-3.5 border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
-                  product.status === "critical"
-                    ? "border-destructive/50 hover:border-destructive bg-destructive/5"
-                    : product.status === "warning"
-                    ? "border-warning/50 hover:border-warning bg-warning/5"
-                    : "border-border hover:border-foreground/20 bg-card"
-                }`}
-              >
-                <div style={{ fontSize: "32px" }} className="leading-none shrink-0">{product.emoji || "📦"}</div>
+            {filteredProducts.map((product) => {
+              const isAgotado = product.stock === 0;
+              const isLowStock = product.stock <= product.lowStockThreshold;
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base truncate leading-tight">{product.name}</h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-sm font-semibold" style={{ color: "#2F6B3E" }}>
-                      {formatCurrency(product.price)}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      {product.status === "critical" && <AlertTriangle className="size-4 text-destructive" />}
-                      {product.status === "warning" && <AlertTriangle className="size-4 text-warning" />}
-                      <span className="text-xs font-medium text-muted-foreground mr-0.5">Stock:</span>
-                      <span className={`text-base font-bold tabular-nums leading-none ${
-                        product.status === "critical" ? "text-destructive" :
-                        product.status === "warning" ? "text-warning" : "text-foreground"
-                      }`}>
-                        {product.stock}
+              // Dynamic HSL coloring logic
+              let cardStyle = {};
+              let iconTextStyle = {};
+              if (isLowStock) {
+                const ratio = product.lowStockThreshold > 0 ? product.stock / product.lowStockThreshold : 0;
+                const hue = Math.max(0, Math.min(45, Math.floor(ratio * 45)));
+                iconTextStyle = { color: `hsl(${hue}, 90%, 50%)` };
+                
+                const isHovered = hoveredCardId === product.id;
+                cardStyle = {
+                  backgroundColor: `hsl(${hue}, 90%, 95%)`,
+                  borderColor: isHovered ? `hsl(${hue}, 90%, 50%)` : `hsl(${hue}, 90%, 80%)`,
+                };
+              }
+
+              return (
+                <div
+                  key={product.id}
+                  onMouseEnter={() => setHoveredCardId(product.id)}
+                  onMouseLeave={() => setHoveredCardId(null)}
+                  style={cardStyle}
+                  className={`flex items-center gap-4 p-3.5 border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
+                    isLowStock
+                      ? ""
+                      : "border-border hover:border-foreground/20 bg-card"
+                  }`}
+                >
+                  <div style={{ fontSize: "32px" }} className="leading-none shrink-0">{product.emoji || "📦"}</div>
+
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base truncate leading-tight">{product.name}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-semibold" style={{ color: "#2F6B3E" }}>
+                        {formatCurrency(product.price)}
                       </span>
+                      <div className="flex items-center gap-1.5">
+                        {isLowStock && (
+                          <AlertTriangle className="size-4" style={iconTextStyle} />
+                        )}
+                        <span className="text-xs font-medium text-muted-foreground mr-0.5">Stock:</span>
+                        <span
+                          className={`text-base font-bold tabular-nums leading-none ${
+                            isLowStock ? "" : "text-foreground"
+                          }`}
+                          style={isLowStock ? iconTextStyle : undefined}
+                        >
+                          {product.stock}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <button
-                  onClick={() => handleEditClick(product)}
-                  className="bg-warning/10 border border-warning/20 text-warning hover:bg-warning/20 rounded-lg flex items-center justify-center p-2 aspect-square transition-colors focus:outline-none focus:ring-2 focus:ring-warning shrink-0 ml-2"
-                  type="button"
-                  aria-label={`Editar producto ${product.name}`}
-                >
-                  <Edit className="size-5" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() => handleEditClick(product)}
+                    className="bg-[#2F6B3E] hover:bg-[#23512e] text-white border border-transparent transition-colors rounded-md p-2 flex items-center justify-center aspect-square focus:outline-none focus:ring-2 focus:ring-[#2F6B3E] shrink-0 ml-2"
+                    type="button"
+                    aria-label={`Editar producto ${product.name}`}
+                  >
+                    <Edit className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
+              );
+            })}
             
             {filteredProducts.length === 0 && (
               <div className="col-span-full rounded-card bg-card p-8 text-center border border-border">
@@ -464,6 +497,37 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
                     <Plus className="size-5" />
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="product-threshold" className="text-sm font-semibold text-muted-foreground block mb-1.5">
+                  Alerta de poco stock (unidades)
+                </label>
+                <input
+                  id="product-threshold"
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  value={editingProduct.lowStockThreshold}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setEditingProduct({ ...editingProduct, lowStockThreshold: "" });
+                    } else {
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        setEditingProduct({ ...editingProduct, lowStockThreshold: parsed });
+                      }
+                    }
+                  }}
+                  placeholder="10"
+                  className="w-full p-3 text-sm rounded-card border border-border bg-card focus:outline-none focus:ring-2 focus:ring-primary min-h-[44px]"
+                  aria-label="Umbral de alerta de poco stock"
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  El sistema avisará cuando el stock baje de este número.
+                </p>
               </div>
 
               <div className="flex gap-3 pt-4">

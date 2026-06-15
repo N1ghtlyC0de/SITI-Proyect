@@ -32,6 +32,7 @@ class Sale(Base):
     vendorName = Column(String, nullable=True)
     amountReceived = Column(Integer, nullable=True)
     change = Column(Integer, nullable=True)
+    transferApp = Column(String, nullable=True)
 
     products = relationship("SaleItem", back_populates="sale")
 

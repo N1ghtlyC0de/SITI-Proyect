@@ -260,10 +260,10 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
 
       {/* Main Content Body constrained to viewport */}
       <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden p-4 flex flex-col pb-4">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 lg:overflow-hidden h-full">
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 lg:gap-8 justify-start min-h-0 lg:overflow-hidden w-full">
           
-          {/* Left Column (Primary Actions & KPIs) - 8 columns on desktop */}
-          <div className="lg:col-span-8 flex flex-col gap-6 h-full lg:overflow-y-auto pr-1 pb-4">
+          {/* Left Column (Primary Actions & KPIs) - 2/3 width on desktop */}
+          <div className="w-full lg:w-2/3 flex flex-col gap-6 h-full lg:overflow-y-auto pr-1 pb-4">
             
             {/* 2. Hero Button (Nueva Venta / Inactivo) */}
             <div>
@@ -470,8 +470,8 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
 
           </div>
 
-          {/* Right Column (Real-Time Feeds & Alerts) - 4 columns on desktop */}
-          <div className="lg:col-span-4 flex flex-col gap-4 h-full lg:overflow-hidden min-h-0 pb-4">
+          {/* Right Column (Real-Time Feeds & Alerts) - 1/3 width on desktop */}
+          <div className="w-full lg:w-1/3 flex flex-col gap-4 h-full lg:overflow-hidden min-h-0 pb-4">
             
             {/* Stock Crítico & Sales Alerts */}
             {hasAlerts && (

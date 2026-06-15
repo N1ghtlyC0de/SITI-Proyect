@@ -10,6 +10,7 @@ const NewSale = lazy(() => import("./components/NewSale").then(m => ({ default: 
 const SalesDashboard = lazy(() => import("./components/SalesDashboard").then(m => ({ default: m.SalesDashboard })));
 const InventoryDashboard = lazy(() => import("./components/InventoryDashboard").then(m => ({ default: m.InventoryDashboard })));
 const ShiftsDashboard = lazy(() => import("./components/ShiftsDashboard").then(m => ({ default: m.ShiftsDashboard })));
+const ShiftsHistory = lazy(() => import("./components/ShiftsHistory").then(m => ({ default: m.ShiftsHistory })));
 const SalesHistory = lazy(() => import("./components/SalesHistory").then(m => ({ default: m.SalesHistory })));
 const ProfileManagement = lazy(() => import("./components/ProfileManagement").then(m => ({ default: m.ProfileManagement })));
 const ApiIntegrationPage = lazy(() => import("./components/pages/ApiIntegrationPage").then(m => ({ default: m.ApiIntegrationPage })));
@@ -45,6 +46,7 @@ type AdminScreen =
   | "sales"
   | "inventory"
   | "shifts"
+  | "shifts-history"
   | "sales-history"
   | "profile-management"
   | "api-integration";
@@ -86,15 +88,16 @@ export interface GlobalState {
     image?: string;
     price: number;
     emoji?: string;
+    lowStockThreshold: number;
   }[];
 }
 
 const initialInventory = [
-  { id: "1", name: "Empanadas de carne", category: "Comida", stock: 45, status: "good" as const, image: "https://images.unsplash.com/photo-1626200419307-e836ec413b52?auto=format&fit=crop&q=80&w=200&h=200", price: 1500, emoji: "🥟" },
-  { id: "2", name: "Arepas de queso", category: "Comida", stock: 12, status: "warning" as const, image: "https://images.unsplash.com/photo-1615870216519-2f9fa575fa5c?auto=format&fit=crop&q=80&w=200&h=200", price: 2500, emoji: "🫓" },
-  { id: "3", name: "Jugos naturales", category: "Bebidas", stock: 30, status: "good" as const, image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&q=80&w=200&h=200", price: 3000, emoji: "🧃" },
-  { id: "4", name: "Gaseosas", category: "Bebidas", stock: 5, status: "critical" as const, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=200&h=200", price: 2500, emoji: "🥤" },
-  { id: "5", name: "Chorizos", category: "Comida", stock: 25, status: "good" as const, image: "https://images.unsplash.com/photo-1599818817290-77a7fceb5a6c?auto=format&fit=crop&q=80&w=200&h=200", price: 4000, emoji: "🌭" },
+  { id: "1", name: "Empanadas de carne", category: "Comida", stock: 45, status: "good" as const, image: "https://images.unsplash.com/photo-1626200419307-e836ec413b52?auto=format&fit=crop&q=80&w=200&h=200", price: 1500, emoji: "🥟", lowStockThreshold: 15 },
+  { id: "2", name: "Arepas de queso", category: "Comida", stock: 12, status: "warning" as const, image: "https://images.unsplash.com/photo-1615870216519-2f9fa575fa5c?auto=format&fit=crop&q=80&w=200&h=200", price: 2500, emoji: "🫓", lowStockThreshold: 20 },
+  { id: "3", name: "Jugos naturales", category: "Bebidas", stock: 30, status: "good" as const, image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&q=80&w=200&h=200", price: 3000, emoji: "🧃", lowStockThreshold: 10 },
+  { id: "4", name: "Gaseosas", category: "Bebidas", stock: 5, status: "critical" as const, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&q=80&w=200&h=200", price: 2500, emoji: "🥤", lowStockThreshold: 10 },
+  { id: "5", name: "Chorizos", category: "Comida", stock: 25, status: "good" as const, image: "https://images.unsplash.com/photo-1599818817290-77a7fceb5a6c?auto=format&fit=crop&q=80&w=200&h=200", price: 4000, emoji: "🌭", lowStockThreshold: 12 },
 ];
 
 const mockSales = [
@@ -401,7 +404,7 @@ export default function App() {
     }
   };
 
-  const handleAddSale = async (cart: any[], total: number, paymentMethod: string, amountReceived?: number) => {
+  const handleAddSale = async (cart: any[], total: number, paymentMethod: string, amountReceived?: number, transferApp?: string) => {
     const newId = String(saleCounter).padStart(3, "0");
     setSaleCounter(prev => prev + 1);
     const newSale = {
@@ -414,7 +417,8 @@ export default function App() {
       status: "ok" as const,
       vendorName: globalState.currentVendor.name,
       amountReceived: paymentMethod === "Efectivo" ? amountReceived : undefined,
-      change: paymentMethod === "Efectivo" && amountReceived ? amountReceived - total : undefined
+      change: paymentMethod === "Efectivo" && amountReceived ? amountReceived - total : undefined,
+      transferApp: paymentMethod === "Transferencia" ? transferApp : undefined
     };
 
     const updatedInventory = globalState.inventory.map(prod => {
@@ -445,6 +449,7 @@ export default function App() {
         vendorName: newSale.vendorName,
         amountReceived: newSale.amountReceived,
         change: newSale.change,
+        transferApp: newSale.transferApp,
         products: cart.map(c => ({
           product_id: c.id,
           name: c.name,
@@ -457,8 +462,10 @@ export default function App() {
         ...prev,
         sales: prev.sales.map(s => s.id === newId ? { ...s, id: apiSale.id } : s)
       }));
+      return apiSale.id;
     } catch (e) {
       console.error("Failed to record sale on backend", e);
+      return newId;
     }
   };
 
@@ -505,9 +512,8 @@ export default function App() {
       return renderWithA11y(
         <NewSale
           inventory={globalState.inventory}
-          onCompleteSale={(cart, total, method, received) => {
-            handleAddSale(cart, total, method, received);
-            setCurrentScreen("home");
+          onCompleteSale={async (cart, total, method, received, transferApp) => {
+            return await handleAddSale(cart, total, method, received, transferApp);
           }}
           onBack={() => setCurrentScreen("home")}
         />,
@@ -558,6 +564,8 @@ export default function App() {
     );
   } else if (currentScreen === "shifts") {
     content = <ShiftsDashboard onNavigate={(id) => setCurrentScreen(id as AdminScreen)} />;
+  } else if (currentScreen === "shifts-history") {
+    content = <ShiftsHistory onBack={() => setCurrentScreen("shifts")} />;
   } else if (currentScreen === "sales-history") {
     content = (
       <SalesHistory

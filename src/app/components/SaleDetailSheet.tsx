@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, formatTxId } from "../lib/utils";
 import { StatusBadge } from "./atoms/StatusBadge";
 import { Modal } from "./molecules/Modal";
 
@@ -21,6 +21,7 @@ interface Sale {
   vendorName?: string;
   amountReceived?: number;
   change?: number;
+  transferApp?: string;
 }
 
 interface SaleDetailSheetProps {
@@ -32,7 +33,7 @@ interface SaleDetailSheetProps {
 export function SaleDetailSheet({ sale, onClose, onCancel }: SaleDetailSheetProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const displayId = `V-${sale.id.substring(0, 3).toUpperCase()}`;
+  const displayId = `Ref: ${formatTxId(sale.id)}`;
   const fullDate = sale.time.toLocaleDateString("es-CO", {
     day: "2-digit",
     month: "long",
@@ -53,7 +54,7 @@ export function SaleDetailSheet({ sale, onClose, onCancel }: SaleDetailSheetProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/45"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/45"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -133,6 +134,7 @@ export function SaleDetailSheet({ sale, onClose, onCancel }: SaleDetailSheetProp
                 <span className="text-sm text-muted-foreground">Método de pago</span>
                 <span className="text-sm font-semibold">
                   {sale.paymentMethod}
+                  {sale.paymentMethod === "Transferencia" && sale.transferApp ? ` (${sale.transferApp})` : ""}
                 </span>
               </div>
 
