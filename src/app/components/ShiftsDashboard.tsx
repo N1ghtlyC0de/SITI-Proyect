@@ -6,21 +6,32 @@ import {
   Plus,
   Minus,
   CheckCircle2,
-  Calendar,
+  Calendar as CalendarIcon,
   LogOut,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  History
 } from "lucide-react";
 import { HeaderNav } from "./HeaderNav";
+import { cn } from "../lib/utils";
+import { Calendar } from "./ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { toast } from "sonner";
+import { PrimaryButton } from "./molecules/PrimaryButton";
 
 interface ShiftsDashboardProps {
   onNavigate?: (id: string) => void;
 }
 
 export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
+  const [activeEmployee, setActiveEmployee] = useState<number>(1);
   const [employeeCount, setEmployeeCount] = useState<number>(1);
+  const [employeeSlots, setEmployeeSlots] = useState<{ [key: number]: Set<number> }>({ 1: new Set() });
   const [savedData, setSavedData] = useState<boolean>(false);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const [isCounterMinimized, setIsCounterMinimized] = useState(false);
   const counterCardRef = useRef<HTMLDivElement>(null);
@@ -45,11 +56,13 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
     };
   }, []);
 
-  // Store time slots. Hours are calculated automatically based on slots selected.
-  const [employeeSlots, setEmployeeSlots] = useState<{ [key: number]: Set<number> }>({ 1: new Set() });
-
-  const [activeEmployee, setActiveEmployee] = useState<number>(1);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  // Sync active employee scroll in sidebar
+  useEffect(() => {
+    const activeEl = document.getElementById(`employee-list-item-${activeEmployee}`);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [activeEmployee]);
 
   const timeSlots = [
     { id: 1, label: "08:00 - 09:00" },
@@ -121,20 +134,63 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
       return;
     }
 
+    // Include selectedDate in the payload
+    const fullPayload = {
+      date: selectedDate.toISOString(),
+      shifts: payload
+    };
+
     // Mock save: The payload array now contains auto-calculated horas_trabajadas
-    console.log("Submitting payload:", payload);
+    console.log("Submitting payload:", fullPayload);
     setSavedData(true);
+    toast.success("Turno guardado exitosamente");
     setTimeout(() => setSavedData(false), 3000);
   };
 
   const handleNewShift = () => {
-    onNavigate?.("home");
+    setEmployeeCount(1);
+    setEmployeeSlots({ 1: new Set() });
+    setActiveEmployee(1);
+    setSelectedDate(new Date());
+    toast.info("Formulario reiniciado");
   };
 
   const isValid = Array.from({ length: employeeCount }).every((_, i) => {
     const slots = employeeSlots[i + 1];
     return slots && slots.size > 0;
   });
+
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear();
+  };
+
+  const isFuture = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date.getTime() > today.getTime() && !isToday(date);
+  };
+
+  const getShiftHeaderLabel = () => {
+    if (isToday(selectedDate)) {
+      return "Turno de hoy";
+    } else if (isFuture(selectedDate)) {
+      return "Turno programado";
+    } else {
+      return "Fecha del turno";
+    }
+  };
+
+  const formatDateLabel = (date: Date) => {
+    return date.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }).replace(/^\w/, (c) => c.toUpperCase());
+  };
 
   return (
     <div className="flex min-h-screen h-auto lg:h-screen lg:overflow-hidden flex-col" style={{ backgroundColor: "#F4F4F2", width: "100%" }}>
@@ -151,7 +207,16 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         </div>
 
         {/* Right Section */}
-        <div className="flex flex-1" />
+        <div className="flex flex-1 justify-end gap-2 pr-2">
+          <PrimaryButton
+            onClick={() => onNavigate?.("shifts-history")}
+            variant="header"
+            icon={<History className="size-4" />}
+            aria-label="Ir al historial de turnos"
+          >
+            <span>Historial de turnos</span>
+          </PrimaryButton>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0 lg:min-h-0">
@@ -160,11 +225,43 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
           <div ref={counterCardRef} className="rounded-card bg-card p-6 shadow-sm border border-border text-center shrink-0">
             <div className="flex justify-center mb-3">
               <div className="rounded-full bg-primary/10 p-3">
-                <Calendar className="size-6 text-primary" />
+                <CalendarIcon className="size-6 text-primary" />
               </div>
             </div>
-            <h2 className="text-lg font-semibold mb-1">Turno de hoy</h2>
-            <p className="text-sm text-muted-foreground mb-6">Martes, 28 de abril de 2026</p>
+            <h2 className="text-lg font-semibold mb-1">{getShiftHeaderLabel()}</h2>
+            
+            {/* Interactive DatePicker */}
+            <div className="mb-6 flex justify-center">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className={cn(
+                      "flex items-center justify-between w-full max-w-[280px] gap-2 rounded-md border border-gray-300 bg-background px-4 py-2 text-sm font-medium shadow-xs hover:bg-gray-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+                    )}
+                    type="button"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="size-4 text-muted-foreground" />
+                      <span>{formatDateLabel(selectedDate)}</span>
+                    </div>
+                    <ChevronDown className="size-4 text-gray-500 ml-auto" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-white" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
             <div className="space-y-4">
               <p className="text-sm font-medium">¿Cuántos empleados trabajaron hoy?</p>
@@ -196,7 +293,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1">
               Empleados ({employeeCount})
             </p>
-            <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto whitespace-nowrap lg:whitespace-normal gap-2 lg:gap-0 lg:space-y-1 pb-2 lg:pb-0 lg:pr-1 lg:h-auto">
+            <div className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto whitespace-nowrap lg:whitespace-normal gap-2 lg:gap-0 lg:space-y-1 pt-1 pb-3 lg:pt-0 lg:pb-0 lg:pr-1 lg:h-auto">
               {Array.from({ length: employeeCount }).map((_, i) => {
                 const empIndex = i + 1;
                 const selectedSlots = employeeSlots[empIndex] || new Set();
@@ -206,6 +303,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                 return (
                   <button
                     key={empIndex}
+                    id={`employee-list-item-${empIndex}`}
                     onClick={() => setActiveEmployee(empIndex)}
                     className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 lg:px-4 lg:py-2.5 text-left transition-colors border text-sm shrink-0 w-auto lg:w-full ${
                       isActive
@@ -234,15 +332,40 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         </div>
 
         {/* Right Column (Detail Workspace) */}
-        <div className="w-full lg:w-2/3 flex flex-col lg:h-full lg:overflow-hidden p-6 justify-between space-y-6">
+        <div className="w-full lg:w-2/3 flex flex-col h-full lg:h-full lg:overflow-hidden p-6 justify-between space-y-6">
           {/* Active Employee Container (strictly layout constrained) */}
-          <div className="flex flex-col bg-card rounded-card shadow-sm border border-border overflow-hidden lg:flex-1 lg:min-h-0">
+          <div className="flex flex-col bg-card rounded-card shadow-sm border border-border overflow-hidden lg:flex-1 lg:min-h-0 lg:max-h-[calc(100vh-18rem)]">
             {/* Stationary Header */}
             <div className="p-6 pb-4 border-b border-border shrink-0">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-row justify-between items-center w-full mb-4">
                 <div className="flex items-center gap-2">
                   <Users className="size-6 text-primary" />
                   <h3 className="text-xl font-semibold">Configuración de Horas: Empleado {activeEmployee}</h3>
+                </div>
+
+                {/* Desktop Linear Pagination (Hidden on mobile) */}
+                <div className="hidden lg:flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveEmployee(prev => Math.max(1, prev - 1))}
+                    disabled={activeEmployee === 1}
+                    className="flex items-center justify-center rounded-md bg-green-800 text-white hover:bg-green-700 p-2 text-sm font-medium transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-all active:scale-95 cursor-pointer"
+                    aria-label="Anterior empleado"
+                  >
+                    <ChevronLeft className="size-4 stroke-[2.5]" />
+                  </button>
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    Emp {activeEmployee} de {employeeCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveEmployee(prev => Math.min(employeeCount, prev + 1))}
+                    disabled={activeEmployee === employeeCount}
+                    className="flex items-center justify-center rounded-md bg-green-800 text-white hover:bg-green-700 p-2 text-sm font-medium transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:bg-gray-100 transition-all active:scale-95 cursor-pointer"
+                    aria-label="Siguiente empleado"
+                  >
+                    <ChevronRight className="size-4 stroke-[2.5]" />
+                  </button>
                 </div>
               </div>
 
@@ -254,11 +377,14 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
               </div>
             </div>
 
-            {/* Timeframe Grid wrapped in its own overflow-y-auto container */}
-            <div className="p-6 space-y-3 h-auto overflow-visible lg:flex-1 lg:overflow-y-auto lg:min-h-0">
+            {/* Static Grid Subtitle Header (outside scroll boundary) */}
+            <div className="px-6 pt-4 pb-1 shrink-0">
               <p className="text-sm font-medium">Selecciona las franjas horarias trabajadas:</p>
-              
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3">
+            </div>
+
+            {/* Timeframe Grid wrapped in its own overflow-y-auto container */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3 mx-6 mb-4 content-start">
                 {timeSlots.map((slot) => {
                   const selectedSlots = employeeSlots[activeEmployee] || new Set();
                   const isSelected = selectedSlots.has(slot.id);
@@ -267,7 +393,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                       key={slot.id}
                       onClick={() => toggleSlot(activeEmployee, slot.id)}
                       className={`
-                        flex items-center justify-between rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors
+                        flex items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors
                         ${isSelected 
                           ? 'border-primary bg-primary/5 text-primary font-bold shadow-sm' 
                           : 'border-border bg-transparent text-muted-foreground hover:bg-accent'
@@ -275,7 +401,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
                       `}
                     >
                       {slot.label}
-                      {isSelected && <CheckCircle2 className="size-3.5 shrink-0 ml-1" />}
+                      {isSelected && <CheckCircle2 className="size-3.5 shrink-0 ml-1.5" />}
                     </button>
                   );
                 })}
@@ -283,31 +409,48 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
             </div>
           </div>
 
-          {/* Stationary Navigation Controls */}
-          <div className="flex justify-between items-center py-4 border-t border-border shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveEmployee(prev => Math.max(1, prev - 1))}
-              disabled={activeEmployee === 1}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
-            >
-              <ChevronLeft className="size-4" /> Anterior
-            </button>
-            <span className="text-sm font-medium text-muted-foreground">
-              Empleado {activeEmployee} de {employeeCount}
-            </span>
-            <button
-              type="button"
-              onClick={() => setActiveEmployee(prev => Math.min(employeeCount, prev + 1))}
-              disabled={activeEmployee === employeeCount}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-accent disabled:opacity-50 transition-all active:scale-95"
-            >
-              Siguiente <ChevronRight className="size-4" />
-            </button>
+          {/* Stationary Navigation Controls - Mobile Only */}
+          <div className="py-2 border-t border-border shrink-0 mt-2 lg:hidden">
+            {/* Mobile Visual Progress Grid */}
+            <div className="flex flex-col w-full">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 text-center">
+                Seleccionar Empleado (Progreso)
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center pb-2">
+                {Array.from({ length: employeeCount }).map((_, i) => {
+                  const empIndex = i + 1;
+                  const selectedSlots = employeeSlots[empIndex] || new Set();
+                  const hasHours = selectedSlots.size > 0;
+                  const isActive = activeEmployee === empIndex;
+
+                  return (
+                    <button
+                      key={empIndex}
+                      type="button"
+                      onClick={() => setActiveEmployee(empIndex)}
+                      className={cn(
+                        "py-2 px-3 text-sm font-semibold rounded-md border transition-all duration-150 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/50",
+                        isActive
+                          ? (hasHours
+                              ? "bg-primary/95 text-primary-foreground border-primary ring-2 ring-primary/20"
+                              : "bg-primary/10 border-2 border-primary text-primary")
+                          : (hasHours
+                              ? "bg-[#2F6B3E] text-white border-transparent hover:bg-[#23512e]"
+                              : "bg-card text-muted-foreground border-border hover:bg-accent")
+                      )}
+                      aria-label={`Ver Empleado ${empIndex}`}
+                      aria-current={isActive ? "true" : undefined}
+                    >
+                      Emp {empIndex}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Stationary Save Actions */}
-          <div className="pt-4 border-t border-border space-y-3 shrink-0">
+          <div className="pt-4 border-t border-border space-y-3 shrink-0 mt-auto">
             <button
               onClick={handleSave}
               disabled={!isValid}

@@ -11,6 +11,7 @@ interface ProductCardProps {
   disabled?: boolean;
   onClick?: () => void;
   className?: string;
+  lowStockThreshold?: number;
 }
 
 export function ProductCard({
@@ -22,19 +23,17 @@ export function ProductCard({
   cartQuantity = 0,
   disabled = false,
   onClick,
-  className = ""
+  className = "",
+  lowStockThreshold = 10
 }: ProductCardProps) {
   const outOfStock = stock === 0;
-  const lowStock = stock <= 5;
-  const mediumStock = stock <= 15;
+  const isLowStock = stock <= lowStockThreshold && stock > 0;
 
   const stockColor = outOfStock
-    ? "text-destructive"
-    : lowStock
-    ? "text-destructive"
-    : mediumStock
-    ? "text-warning"
-    : "text-muted-foreground";
+    ? "text-gray-400"
+    : isLowStock
+    ? "text-orange-600 font-medium"
+    : "text-gray-500";
 
   return (
     <button

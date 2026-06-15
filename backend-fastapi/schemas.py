@@ -54,6 +54,7 @@ class SaleBase(BaseModel):
     vendorName: Optional[str] = None
     amountReceived: Optional[int] = None
     change: Optional[int] = None
+    transferApp: Optional[str] = None
 
 class SaleCreate(SaleBase):
     products: List[SaleItemCreate]

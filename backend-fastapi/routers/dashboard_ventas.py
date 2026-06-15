@@ -23,7 +23,8 @@ def create_sale(sale: schemas.SaleCreate, db: Session = Depends(get_db)):
         status=sale.status,
         vendorName=sale.vendorName,
         amountReceived=sale.amountReceived,
-        change=sale.change
+        change=sale.change,
+        transferApp=sale.transferApp
     )
     db.add(db_sale)
     db.commit()

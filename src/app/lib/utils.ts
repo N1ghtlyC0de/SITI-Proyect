@@ -28,3 +28,9 @@ export function formatDate(date: Date): string {
     year: "numeric",
   }).format(date);
 }
+
+export function formatTxId(id: string): string {
+  if (!id) return "";
+  const cleaned = id.replace(/[^a-zA-Z0-9]/g, "");
+  return `#${cleaned.substring(0, 6).toUpperCase()}`;
+}
