@@ -7,6 +7,9 @@ load_dotenv(encoding="utf-8")
 
 # Fallback to SQLite if no PostgreSQL URL is provided
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./siti_database.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 
 # Connection arguments (UTF-8 encoding and thread check)
 if DATABASE_URL.startswith("sqlite"):

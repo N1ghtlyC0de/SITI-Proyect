@@ -3,10 +3,8 @@ type ApiMode = "rest" | "graphql";
 const DEFAULT_BASE_URL = "http://localhost:8000";
 const DEFAULT_GRAPHQL_PATH = "/graphql";
 
-const env = typeof import.meta !== "undefined" ? import.meta.env : undefined;
-
-export const API_BASE_URL = env?.VITE_API_BASE_URL || DEFAULT_BASE_URL;
-export const API_MODE: ApiMode = env?.VITE_API_MODE === "graphql" ? "graphql" : "rest";
+export const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || DEFAULT_BASE_URL;
+export const API_MODE: ApiMode = import.meta.env?.VITE_API_MODE === "graphql" ? "graphql" : "rest";
 
 console.log(
   `[API Client] Initialized with API_BASE_URL: ${API_BASE_URL}. ` +
@@ -17,18 +15,22 @@ function normalizePath(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
-  if (path.startsWith("/")) {
-    return `${API_BASE_URL}${path}`;
-  }
-  return `${API_BASE_URL}/${path}`;
+  
+  // Remove trailing slashes from the base URL
+  const baseUrl = API_BASE_URL.replace(/\/+$/, "");
+  // Remove leading slashes from the target path
+  const cleanPath = path.replace(/^\/+/, "");
+  
+  return `${baseUrl}/${cleanPath}`;
 }
 
 function getGraphqlEndpoint(): string {
-  if (env?.VITE_GRAPHQL_ENDPOINT) {
-    return normalizePath(env.VITE_GRAPHQL_ENDPOINT);
+  if (import.meta.env?.VITE_GRAPHQL_ENDPOINT) {
+    return normalizePath(import.meta.env.VITE_GRAPHQL_ENDPOINT);
   }
   return normalizePath(DEFAULT_GRAPHQL_PATH);
 }
+
 
 export function getBackendConfig() {
   return {
