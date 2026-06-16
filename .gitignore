@@ -10,3 +10,6 @@ dist-ssr
 !package-lock.json
 !tsconfig.json
 *.cjs
+
+# Environment variables
+.env
