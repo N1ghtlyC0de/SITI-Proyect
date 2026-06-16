@@ -2,7 +2,8 @@ import { API_BASE_URL, API_MODE, apiRequest, graphqlRequest } from "./apiClient"
 import type { ApiPost, CreatePostPayload } from "../types/api";
 
 const REST_POSTS_PATH =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_REST_POSTS_PATH) || "/posts";
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_REST_POSTS_PATH) || "/publicaciones";
+
 
 function resolveRestPath(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
