@@ -39,6 +39,49 @@ interface Product {
   lowStockThreshold: number;
 }
 
+/**
+ * Helper function to determine stock status and corresponding styling classes.
+ * Handles edge cases like null or undefined stock/threshold values.
+ */
+export function getProductStockStatus(stock: number | null | undefined, lowStockThreshold?: number | null) {
+  const currentStock = stock ?? 0;
+  const threshold = lowStockThreshold ?? 5;
+
+  if (currentStock === 0) {
+    return {
+      status: "Agotado" as const,
+      textClass: "text-destructive font-bold",
+      badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
+      cardClass: "border-destructive/30 bg-destructive/5 dark:bg-destructive/10 hover:border-destructive/60",
+      iconColor: "text-destructive",
+      isAgotado: true,
+      isLowStock: true,
+    };
+  }
+
+  if (currentStock <= threshold) {
+    return {
+      status: "Escaso" as const,
+      textClass: "text-amber-600 dark:text-amber-500 font-bold",
+      badgeClass: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200/50",
+      cardClass: "border-amber-300 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:border-amber-500",
+      iconColor: "text-amber-600 dark:text-amber-500",
+      isAgotado: false,
+      isLowStock: true,
+    };
+  }
+
+  return {
+    status: "Normal" as const,
+    textClass: "text-foreground font-medium",
+    badgeClass: "bg-muted text-muted-foreground border-border/50",
+    cardClass: "border-border hover:border-foreground/20 bg-card",
+    iconColor: "text-muted-foreground",
+    isAgotado: false,
+    isLowStock: false,
+  };
+}
+
 interface InventoryDashboardProps {
   inventory?: Product[];
   onNavigate?: (id: string) => void;
@@ -64,8 +107,10 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   const filteredProducts = inventory.filter(p => {
-    const isAgotado = p.stock === 0;
-    const isEscaso = p.stock <= p.lowStockThreshold && p.stock > 0;
+    const currentStock = p.stock ?? 0;
+    const threshold = p.lowStockThreshold ?? 5;
+    const isAgotado = currentStock === 0;
+    const isEscaso = currentStock <= threshold && currentStock > 0;
 
     if (filterStatus === "escasos" && !isEscaso) return false;
     if (filterStatus === "agotados" && !isAgotado) return false;
@@ -77,8 +122,8 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
     switch (sortBy) {
       case "name-asc": return a.name.localeCompare(b.name);
       case "name-desc": return b.name.localeCompare(a.name);
-      case "stock-asc": return a.stock - b.stock;
-      case "stock-desc": return b.stock - a.stock;
+      case "stock-asc": return (a.stock ?? 0) - (b.stock ?? 0);
+      case "stock-desc": return (b.stock ?? 0) - (a.stock ?? 0);
       default: return 0;
     }
   });
@@ -169,17 +214,23 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
           
           <div className="rounded-card bg-card p-4 shadow-sm border border-border flex gap-4">
             <div className="flex-1 text-center">
-              <p className="text-2xl font-bold">{inventory.reduce((acc, p) => acc + p.stock, 0)}</p>
+              <p className="text-2xl font-bold">{inventory.reduce((acc, p) => acc + (p.stock ?? 0), 0)}</p>
               <p className="text-xs text-muted-foreground">Total artículos</p>
             </div>
             <div className="w-px bg-border"></div>
             <div className="flex-1 text-center">
-              <p className="text-2xl font-bold text-warning">{inventory.filter(p => p.stock <= p.lowStockThreshold && p.stock > 0).length}</p>
+              <p className="text-2xl font-bold text-warning">
+                {inventory.filter(p => {
+                  const currentStock = p.stock ?? 0;
+                  const threshold = p.lowStockThreshold ?? 5;
+                  return currentStock <= threshold && currentStock > 0;
+                }).length}
+              </p>
               <p className="text-xs text-muted-foreground">Por agotarse</p>
             </div>
             <div className="w-px bg-border"></div>
             <div className="flex-1 text-center">
-              <p className="text-2xl font-bold text-destructive">{inventory.filter(p => p.stock === 0).length}</p>
+              <p className="text-2xl font-bold text-destructive">{inventory.filter(p => (p.stock ?? 0) === 0).length}</p>
               <p className="text-xs text-muted-foreground">Agotados</p>
             </div>
           </div>
@@ -284,35 +335,12 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredProducts.map((product) => {
-              const isAgotado = product.stock === 0;
-              const isLowStock = product.stock <= product.lowStockThreshold;
-
-              // Dynamic HSL coloring logic
-              let cardStyle = {};
-              let iconTextStyle = {};
-              if (isLowStock) {
-                const ratio = product.lowStockThreshold > 0 ? product.stock / product.lowStockThreshold : 0;
-                const hue = Math.max(0, Math.min(45, Math.floor(ratio * 45)));
-                iconTextStyle = { color: `hsl(${hue}, 90%, 50%)` };
-                
-                const isHovered = hoveredCardId === product.id;
-                cardStyle = {
-                  backgroundColor: `hsl(${hue}, 90%, 95%)`,
-                  borderColor: isHovered ? `hsl(${hue}, 90%, 50%)` : `hsl(${hue}, 90%, 80%)`,
-                };
-              }
+              const statusInfo = getProductStockStatus(product.stock, product.lowStockThreshold);
 
               return (
                 <div
                   key={product.id}
-                  onMouseEnter={() => setHoveredCardId(product.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                  style={cardStyle}
-                  className={`flex items-center gap-4 p-3.5 border-2 rounded-xl transition-all duration-200 hover:shadow-md ${
-                    isLowStock
-                      ? ""
-                      : "border-border hover:border-foreground/20 bg-card"
-                  }`}
+                  className={`flex items-center gap-4 p-3.5 border-2 rounded-xl transition-all duration-200 hover:shadow-md ${statusInfo.cardClass}`}
                 >
                   <div style={{ fontSize: "32px" }} className="leading-none shrink-0">{product.emoji || "📦"}</div>
 
@@ -322,19 +350,21 @@ export function InventoryDashboard({ inventory = [], onNavigate, onUpdateProduct
                       <span className="text-sm font-semibold" style={{ color: "#2F6B3E" }}>
                         {formatCurrency(product.price)}
                       </span>
-                      <div className="flex items-center gap-1.5">
-                        {isLowStock && (
-                          <AlertTriangle className="size-4" style={iconTextStyle} />
+                      <div className="flex items-center gap-2">
+                        {statusInfo.status !== "Normal" && (
+                          <div className="flex items-center gap-1">
+                            <AlertTriangle className={`size-4 ${statusInfo.iconColor}`} />
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${statusInfo.badgeClass}`}>
+                              {statusInfo.status}
+                            </span>
+                          </div>
                         )}
-                        <span className="text-xs font-medium text-muted-foreground mr-0.5">Stock:</span>
-                        <span
-                          className={`text-base font-bold tabular-nums leading-none ${
-                            isLowStock ? "" : "text-foreground"
-                          }`}
-                          style={isLowStock ? iconTextStyle : undefined}
-                        >
-                          {product.stock}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium text-muted-foreground mr-0.5">Stock:</span>
+                          <span className={`text-base font-bold tabular-nums leading-none ${statusInfo.textClass}`}>
+                            {product.stock ?? 0}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

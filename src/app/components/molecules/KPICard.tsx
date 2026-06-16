@@ -49,7 +49,7 @@ export function KPICard({
   return (
     <Component
       onClick={onClick}
-      className={`rounded-card p-4 shadow-sm border border-border transition-all ${styles.bg} ${
+      className={`rounded-card p-4 shadow-sm border border-border transition-all print:break-inside-avoid print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact] ${styles.bg} ${
         onClick ? "cursor-pointer hover:shadow-md active:scale-98" : ""
       } ${className}`}
       {...(onClick && {
