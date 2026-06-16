@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .database import engine, Base, SessionLocal, get_db
 from . import models
-from .routers import auth, vendedores, inventario, dashboard_ventas, turnos, configuracion
+from .routers import auth, vendedores, inventario, dashboard_ventas, turnos, configuracion, publicaciones
 
 # Create database tables
 try:
@@ -78,6 +78,7 @@ app.include_router(inventario.router)
 app.include_router(dashboard_ventas.router) # /ventas prefix
 app.include_router(turnos.router)
 app.include_router(configuracion.router)
+app.include_router(publicaciones.router)
 
 @app.get("/")
 def read_root():

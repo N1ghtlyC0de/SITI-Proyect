@@ -156,3 +156,18 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     success: bool
     vendor: Optional[VendorResponse] = None
+
+# Publicaciones
+class PublicacionCreate(BaseModel):
+    title: str
+    body: str
+    userId: Optional[int] = 1
+
+class PublicacionResponse(BaseModel):
+    id: int
+    title: str
+    body: str
+    userId: int = 1
+
+    model_config = ConfigDict(from_attributes=True)
+
