@@ -41,12 +41,18 @@ def get_shifts(db: Session = Depends(get_db)):
 
 @router.get("/por-fecha", response_model=List[schemas.ShiftResponse])
 def get_shifts_by_date(fecha: str, db: Session = Depends(get_db)):
-    # Match any shifts starting with the date string (e.g. YYYY-MM-DD)
-    shifts = db.query(models.Shift).filter(
-        models.Shift.empleado_id != None,
-        models.Shift.date.like(f"{fecha}%")
-    ).all()
-    return [map_shift_model_to_response(s) for s in shifts]
+    try:
+        # Match any shifts starting with the date string (e.g. YYYY-MM-DD)
+        shifts = db.query(models.Shift).filter(
+            models.Shift.date.like(f"{fecha}%")
+        ).all()
+        return [map_shift_model_to_response(s) for s in shifts]
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al consultar los turnos por fecha: {str(e)}"
+        )
+
 
 
 @router.post("", response_model=schemas.ShiftResponse)
