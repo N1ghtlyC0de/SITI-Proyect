@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from "react";
+import { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { Minus, Plus, Search, LogOut } from "lucide-react";
 import { Vendor } from "../App";
 import { SaleRow } from "./SaleRow";

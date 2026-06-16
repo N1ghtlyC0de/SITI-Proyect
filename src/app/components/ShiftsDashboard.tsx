@@ -20,6 +20,7 @@ import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { PrimaryButton } from "./molecules/PrimaryButton";
+import { openShift } from "../services/fastapi";
 
 interface ShiftsDashboardProps {
   onNavigate?: (id: string) => void;
@@ -112,7 +113,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     let hasEmpty = false;
     const payload = [];
 
@@ -140,8 +141,25 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
       shifts: payload
     };
 
-    // Mock save: The payload array now contains auto-calculated horas_trabajadas
     console.log("Submitting payload:", fullPayload);
+
+    // Call the actual backend openShift API for each shift logged
+    try {
+      await Promise.all(
+        payload.map(shift =>
+          openShift({
+            status: "open",
+            date: selectedDate.toISOString(),
+            empleado_id: shift.empleado_id,
+            horas_trabajadas: shift.horas_trabajadas,
+            franjas: shift.franjas
+          })
+        )
+      );
+    } catch (e) {
+      console.error("Failed to save shifts on backend", e);
+    }
+
     setSavedData(true);
     toast.success("Turno guardado exitosamente");
     setTimeout(() => setSavedData(false), 3000);

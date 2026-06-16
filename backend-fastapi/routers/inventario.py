@@ -6,15 +6,15 @@ from .. import models, schemas
 from ..database import get_db
 
 router = APIRouter(
-    prefix="/api/v1/inventario",
-    tags=["inventario"]
+    prefix="/productos",
+    tags=["productos"]
 )
 
-@router.get("/products", response_model=List[schemas.ProductResponse])
+@router.get("", response_model=List[schemas.ProductResponse])
 def get_products(db: Session = Depends(get_db)):
     return db.query(models.Product).all()
 
-@router.post("/products", response_model=schemas.ProductResponse)
+@router.post("", response_model=schemas.ProductResponse)
 def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
     db_product = models.Product(**product.model_dump())
     db.add(db_product)
@@ -22,7 +22,7 @@ def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)
     db.refresh(db_product)
     return db_product
 
-@router.put("/products/{product_id}", response_model=schemas.ProductResponse)
+@router.put("/{product_id}", response_model=schemas.ProductResponse)
 def update_product(product_id: str, product: schemas.ProductUpdate, db: Session = Depends(get_db)):
     db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not db_product:
@@ -36,7 +36,7 @@ def update_product(product_id: str, product: schemas.ProductUpdate, db: Session 
     db.refresh(db_product)
     return db_product
 
-@router.delete("/products/{product_id}")
+@router.delete("/{product_id}")
 def delete_product(product_id: str, db: Session = Depends(get_db)):
     db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not db_product:

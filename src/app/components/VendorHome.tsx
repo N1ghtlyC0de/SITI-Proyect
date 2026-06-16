@@ -7,7 +7,7 @@ import { StatusBadge } from "./molecules/StatusBadge";
 import { toast } from "sonner";
 import { Modal } from "./molecules/Modal";
 import { PrimaryButton } from "./molecules/PrimaryButton";
-import { createValidation } from "../services/fastapi";
+import { closeShift } from "../services/fastapi";
 
 const VendorSwitcher = lazy(() => import("./VendorSwitcher").then(m => ({ default: m.VendorSwitcher })));
 const SaleDetailSheet = lazy(() => import("./SaleDetailSheet").then(m => ({ default: m.SaleDetailSheet })));
@@ -151,7 +151,7 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
     else if (diff > 0.01) status = "over";
 
     try {
-      await createValidation({
+      await closeShift(currentVendor.id, {
         total_expected: totalCashExpected,
         total_physical: cashInput,
         difference: Math.abs(diff),

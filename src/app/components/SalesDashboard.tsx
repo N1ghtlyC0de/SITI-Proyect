@@ -27,7 +27,6 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { formatCurrency, cn } from "../lib/utils";
-import { createValidation } from "../services/fastapi";
 import { HeaderNav } from "./HeaderNav";
 import { PrimaryButton } from "./molecules/PrimaryButton";
 import { KPICard } from "./molecules/KPICard";
