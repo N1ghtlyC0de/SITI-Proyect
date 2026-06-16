@@ -66,19 +66,93 @@ class SaleResponse(SaleBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# Cashbox Validation
-class CashboxValidationBase(BaseModel):
-    vendorName: Optional[str] = None
-    total_expected: int
-    total_physical: int
-    difference: int
-    status: str
+# Vendor Schemas
+class AvatarColorSchema(BaseModel):
+    bg: str
+    text: str
 
-class CashboxValidationCreate(CashboxValidationBase):
+class VendorBase(BaseModel):
+    name: str
+    emoji: str
+    role: str
+    avatarColor: AvatarColorSchema
+
+class VendorCreate(VendorBase):
     pass
 
-class CashboxValidationResponse(CashboxValidationBase):
+class VendorUpdate(BaseModel):
+    name: Optional[str] = None
+    emoji: Optional[str] = None
+    role: Optional[str] = None
+    avatarColor: Optional[AvatarColorSchema] = None
+
+class VendorResponse(BaseModel):
     id: str
-    time: datetime
+    name: str
+    emoji: str
+    role: str
+    avatarColor: AvatarColorSchema
 
     model_config = ConfigDict(from_attributes=True)
+
+# Shift Schemas
+class ShiftBase(BaseModel):
+    status: str
+    vendorName: Optional[str] = None
+    total_expected: Optional[int] = None
+    total_physical: Optional[int] = None
+    difference: Optional[int] = None
+    openedAt: Optional[datetime] = None
+    closedAt: Optional[datetime] = None
+    note: Optional[str] = None
+    date: Optional[str] = None
+    empleado_id: Optional[int] = None
+    horas_trabajadas: Optional[int] = None
+    franjas: Optional[List[int]] = None
+
+class ShiftCreate(BaseModel):
+    status: str
+    vendorName: Optional[str] = None
+    total_expected: Optional[int] = None
+    total_physical: Optional[int] = None
+    difference: Optional[int] = None
+    note: Optional[str] = None
+    date: Optional[str] = None
+    empleado_id: Optional[int] = None
+    horas_trabajadas: Optional[int] = None
+    franjas: Optional[List[int]] = None
+
+class ShiftResponse(BaseModel):
+    id: str
+    time: datetime
+    status: str
+    vendorName: Optional[str] = None
+    total_expected: Optional[int] = None
+    total_physical: Optional[int] = None
+    difference: Optional[int] = None
+    openedAt: Optional[datetime] = None
+    closedAt: Optional[datetime] = None
+    note: Optional[str] = None
+    date: Optional[str] = None
+    empleado_id: Optional[int] = None
+    horas_trabajadas: Optional[int] = None
+    franjas: Optional[List[int]] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Configuration Schemas
+class DailyGoalBase(BaseModel):
+    goal: int
+
+class DailyGoalResponse(DailyGoalBase):
+    pass
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Auth Schemas
+class LoginRequest(BaseModel):
+    id: str
+
+class LoginResponse(BaseModel):
+    success: bool
+    vendor: Optional[VendorResponse] = None

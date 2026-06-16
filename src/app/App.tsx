@@ -1,7 +1,24 @@
 import { ReactNode, useState, useEffect, Suspense, lazy, useRef } from "react";
 import { Home, ShoppingCart, Package, Clock, X } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
-import { getProducts, getSales, createProduct, updateProduct, deleteProduct, createSale } from "./services/fastapi";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import {
+  getProducts,
+  getSales,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  createSale,
+  cancelSale,
+  getVendors,
+  createVendor,
+  updateVendor,
+  deleteVendor,
+  login,
+  logout,
+  getDailyGoal,
+  updateDailyGoal
+} from "./services/fastapi";
 
 const VendorHome = lazy(() => import("./components/VendorHome").then(m => ({ default: m.VendorHome })));
 const VendorSimpleView = lazy(() => import("./components/VendorSimpleView").then(m => ({ default: m.VendorSimpleView })));
@@ -251,15 +268,19 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [apiProducts, apiSales] = await Promise.all([
+        const [apiProducts, apiSales, apiVendors, apiDailyGoal] = await Promise.all([
           getProducts(),
-          getSales()
+          getSales(),
+          getVendors(),
+          getDailyGoal()
         ]);
         
         setGlobalState(prev => ({
           ...prev,
           inventory: apiProducts.length > 0 ? (apiProducts as any) : prev.inventory,
-          sales: apiSales.length > 0 ? apiSales.map(s => ({ ...s, time: new Date(s.time) })) as any : prev.sales
+          sales: apiSales.length > 0 ? apiSales.map(s => ({ ...s, time: new Date(s.time) })) as any : prev.sales,
+          vendors: apiVendors.length > 0 ? apiVendors : prev.vendors,
+          dailyGoal: apiDailyGoal?.goal !== undefined ? apiDailyGoal.goal : prev.dailyGoal
         }));
       } catch (err) {
         console.error("Backend fetch failed. Using local mock data.", err);
@@ -280,15 +301,22 @@ export default function App() {
         Saltar al contenido principal
       </a>
       <main id="main-content">
-        <Suspense fallback={<LoadingFallback />}>
-          {content}
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingFallback />}>
+            {content}
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Toaster position={isMobile ? "top-center" : "bottom-right"} />
     </>
   );
 
-  const handleLogin = (vendorId: string) => {
+  const handleLogin = async (vendorId: string) => {
+    try {
+      await login({ id: vendorId });
+    } catch (e) {
+      console.error("Failed to login on backend", e);
+    }
     const vendor = globalState.vendors.find(v => v.id === vendorId);
     if (vendor) {
       setGlobalState(prev => ({ ...prev, currentVendor: vendor }));
@@ -297,7 +325,12 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error("Failed to logout on backend", e);
+    }
     setIsLoggedIn(false);
     setCurrentScreen("home");
   };
@@ -309,30 +342,59 @@ export default function App() {
     }
   };
 
-  const handleCreateVendor = (vendor: Omit<Vendor, "id">) => {
+  const handleCreateVendor = async (vendor: Omit<Vendor, "id">) => {
+    const tempId = `vendor-${Date.now()}`;
     const newVendor: Vendor = {
       ...vendor,
-      id: `vendor-${Date.now()}`
+      id: tempId
     };
     setGlobalState(prev => ({
       ...prev,
       vendors: [...prev.vendors, newVendor]
     }));
+    try {
+      const apiVendor = await createVendor(vendor);
+      setGlobalState(prev => ({
+        ...prev,
+        vendors: prev.vendors.map(v => v.id === tempId ? { ...v, id: apiVendor.id } : v)
+      }));
+    } catch (e) {
+      console.error("Failed to create vendor on backend", e);
+    }
   };
 
-  const handleUpdateVendor = (vendorId: string, updates: Partial<Omit<Vendor, "id">>) => {
+  const handleUpdateVendor = async (vendorId: string, updates: Partial<Omit<Vendor, "id">>) => {
     setGlobalState(prev => ({
       ...prev,
       vendors: prev.vendors.map(v => v.id === vendorId ? { ...v, ...updates } : v),
       currentVendor: prev.currentVendor.id === vendorId ? { ...prev.currentVendor, ...updates } : prev.currentVendor
     }));
+    try {
+      await updateVendor(vendorId, updates);
+    } catch (e) {
+      console.error("Failed to update vendor on backend", e);
+    }
   };
 
-  const handleDeleteVendor = (vendorId: string) => {
+  const handleDeleteVendor = async (vendorId: string) => {
     setGlobalState(prev => ({
       ...prev,
       vendors: prev.vendors.filter(v => v.id !== vendorId)
     }));
+    try {
+      await deleteVendor(vendorId);
+    } catch (e) {
+      console.error("Failed to delete vendor on backend", e);
+    }
+  };
+
+  const handleSetDailyGoal = async (goal: number) => {
+    setGlobalState(prev => ({ ...prev, dailyGoal: goal }));
+    try {
+      await updateDailyGoal({ goal });
+    } catch (e) {
+      console.error("Failed to update daily goal on backend", e);
+    }
   };
 
   const handleUpdateProduct = async (productId: string, updates: Partial<any>) => {
@@ -469,7 +531,7 @@ export default function App() {
     }
   };
 
-  const handleCancelSale = (saleId: string) => {
+  const handleCancelSale = async (saleId: string) => {
     setGlobalState(prev => {
       const saleToCancel = prev.sales.find(s => s.id === saleId);
       if (!saleToCancel || saleToCancel.status === "cancelled") {
@@ -499,6 +561,12 @@ export default function App() {
         inventory: updatedInventory
       };
     });
+
+    try {
+      await cancelSale(saleId);
+    } catch (e) {
+      console.error("Failed to cancel sale on backend", e);
+    }
   };
 
   // Not logged in → show login screen
@@ -595,7 +663,7 @@ export default function App() {
         dailyGoal={globalState.dailyGoal}
         currentVendor={globalState.currentVendor}
         vendors={globalState.vendors}
-        onSetDailyGoal={(goal) => setGlobalState(prev => ({ ...prev, dailyGoal: goal }))}
+        onSetDailyGoal={handleSetDailyGoal}
         onChangeVendor={handleChangeVendor}
         onManageProfiles={() => setCurrentScreen("profile-management")}
         onOpenApiDemo={() => setCurrentScreen("api-integration")}
