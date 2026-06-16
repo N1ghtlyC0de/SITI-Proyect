@@ -493,9 +493,9 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
                               </span>
                             </div>
                             <div className="flex items-center gap-2 pl-4">
-                              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                              <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact]">
                                 <div
-                                    className="h-full rounded-full"
+                                    className="h-full rounded-full print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact]"
                                     style={{ width: `${percentage}%`, backgroundColor: product.color }}
                                 />
                               </div>
