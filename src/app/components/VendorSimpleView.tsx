@@ -3,6 +3,7 @@ import { Minus, Plus, Search, LogOut } from "lucide-react";
 import { Vendor } from "../App";
 import { SaleRow } from "./SaleRow";
 import { toast } from "sonner";
+import { closeShift } from "../services/fastapi";
 
 const SaleDetailSheet = lazy(() => import("./SaleDetailSheet").then(m => ({ default: m.SaleDetailSheet })));
 const CloseShiftSheet = lazy(() => import("./CloseShiftSheet").then(m => ({ default: m.CloseShiftSheet })));
@@ -54,8 +55,19 @@ export function VendorSimpleView({
   const myValidSales = myAllSales.filter(s => s.status !== "cancelled");
   const recentSales = myAllSales.slice(0, 10);
 
-  const handleConfirmCloseShift = (nextVendorId: string | null, note: string) => {
+  const handleConfirmCloseShift = async (nextVendorId: string | null, note: string) => {
     const nextVendor = nextVendorId ? vendors.find(v => v.id === nextVendorId) || null : null;
+    
+    try {
+      await closeShift("current", {
+        status: "closed",
+        note: note,
+        vendorName: currentVendor.name
+      });
+    } catch (e) {
+      console.error("Failed to close shift on backend", e);
+    }
+
     setShowCloseShiftSheet(false);
     setPostShiftData({ previousVendor: currentVendor, nextVendor, durationString });
     if (note) console.log("Nota del turno:", note);

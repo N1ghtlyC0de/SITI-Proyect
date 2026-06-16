@@ -39,6 +39,16 @@ def get_shifts(db: Session = Depends(get_db)):
     shifts = db.query(models.Shift).order_by(models.Shift.time.desc()).all()
     return [map_shift_model_to_response(s) for s in shifts]
 
+@router.get("/por-fecha", response_model=List[schemas.ShiftResponse])
+def get_shifts_by_date(fecha: str, db: Session = Depends(get_db)):
+    # Match any shifts starting with the date string (e.g. YYYY-MM-DD)
+    shifts = db.query(models.Shift).filter(
+        models.Shift.empleado_id != None,
+        models.Shift.date.like(f"{fecha}%")
+    ).all()
+    return [map_shift_model_to_response(s) for s in shifts]
+
+
 @router.post("", response_model=schemas.ShiftResponse)
 def open_shift(shift: schemas.ShiftCreate, db: Session = Depends(get_db)):
     franjas_str = ",".join(map(str, shift.franjas)) if shift.franjas else None
@@ -117,3 +127,43 @@ def close_shift(shift_id: str, shift_data: schemas.ShiftCreate, db: Session = De
     db.commit()
     db.refresh(db_shift)
     return map_shift_model_to_response(db_shift)
+
+@router.put("/{shift_id}", response_model=schemas.ShiftResponse)
+def update_shift(shift_id: str, shift_data: schemas.ShiftCreate, db: Session = Depends(get_db)):
+    db_shift = db.query(models.Shift).filter(models.Shift.id == shift_id).first()
+    if not db_shift:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+        
+    db_shift.status = shift_data.status
+    if shift_data.vendorName is not None:
+        db_shift.vendorName = shift_data.vendorName
+    if shift_data.total_expected is not None:
+        db_shift.total_expected = shift_data.total_expected
+    if shift_data.total_physical is not None:
+        db_shift.total_physical = shift_data.total_physical
+    if shift_data.difference is not None:
+        db_shift.difference = shift_data.difference
+    if shift_data.note is not None:
+        db_shift.note = shift_data.note
+    if shift_data.date is not None:
+        db_shift.date = shift_data.date
+    if shift_data.empleado_id is not None:
+        db_shift.empleado_id = shift_data.empleado_id
+    if shift_data.horas_trabajadas is not None:
+        db_shift.horas_trabajadas = shift_data.horas_trabajadas
+    if shift_data.franjas is not None:
+        db_shift.franjas = ",".join(map(str, shift_data.franjas))
+        
+    db.commit()
+    db.refresh(db_shift)
+    return map_shift_model_to_response(db_shift)
+
+@router.delete("/{shift_id}")
+def delete_shift(shift_id: str, db: Session = Depends(get_db)):
+    db_shift = db.query(models.Shift).filter(models.Shift.id == shift_id).first()
+    if not db_shift:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+    db.delete(db_shift)
+    db.commit()
+    return {"ok": True}
+

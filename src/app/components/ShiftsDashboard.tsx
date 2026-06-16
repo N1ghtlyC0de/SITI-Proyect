@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  History
+  History,
+  RefreshCw
 } from "lucide-react";
 import { HeaderNav } from "./HeaderNav";
 import { cn } from "../lib/utils";
@@ -20,11 +21,19 @@ import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { PrimaryButton } from "./molecules/PrimaryButton";
-import { openShift } from "../services/fastapi";
+import { openShift, getShiftsByDate, updateShift, deleteShift } from "../services/fastapi";
 
 interface ShiftsDashboardProps {
   onNavigate?: (id: string) => void;
 }
+
+// Helper to format Date object into local YYYY-MM-DD
+const getLocalDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const [activeEmployee, setActiveEmployee] = useState<number>(1);
@@ -33,9 +42,60 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
   const [savedData, setSavedData] = useState<boolean>(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loadedShifts, setLoadedShifts] = useState<any[]>([]);
 
   const [isCounterMinimized, setIsCounterMinimized] = useState(false);
   const counterCardRef = useRef<HTMLDivElement>(null);
+
+  // Load shifts automatically when selectedDate changes (Load-on-Select)
+  useEffect(() => {
+    const loadShiftsForDate = async () => {
+      const dateStr = getLocalDateString(selectedDate);
+      setIsLoading(true);
+      try {
+        const data = await getShiftsByDate(dateStr);
+        if (data && data.length > 0) {
+          setLoadedShifts(data);
+          const maxEmpId = data.reduce((max, s) => Math.max(max, s.empleado_id || 1), 1);
+          setEmployeeCount(maxEmpId);
+          setActiveEmployee(1);
+          
+          const newSlots: { [key: number]: Set<number> } = {};
+          for (let i = 1; i <= maxEmpId; i++) {
+            newSlots[i] = new Set();
+          }
+          data.forEach(s => {
+            if (s.empleado_id) {
+              newSlots[s.empleado_id] = new Set(s.franjas || []);
+            }
+          });
+          setEmployeeSlots(newSlots);
+          toast.success(`Turno cargado: se encontraron ${data.length} registros para esta fecha.`);
+        } else {
+          // Reset to default empty form if no records exist for the date
+          setLoadedShifts([]);
+          setEmployeeCount(1);
+          setActiveEmployee(1);
+          setEmployeeSlots({ 1: new Set() });
+        }
+      } catch (e) {
+        console.error("Failed to load shifts for date:", e);
+        toast.error("Error al cargar los turnos de la fecha seleccionada.");
+        // Fallback to empty default form
+        setLoadedShifts([]);
+        setEmployeeCount(1);
+        setActiveEmployee(1);
+        setEmployeeSlots({ 1: new Set() });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadShiftsForDate();
+  }, [selectedDate]);
+
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -123,7 +183,7 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         hasEmpty = true;
       } else {
         payload.push({
-          empleado_id: i, // Assuming index is ID for now
+          empleado_id: i,
           horas_trabajadas: slots.size,
           franjas: Array.from(slots)
         });
@@ -135,37 +195,64 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
       return;
     }
 
-    // Include selectedDate in the payload
-    const fullPayload = {
-      date: selectedDate.toISOString(),
-      shifts: payload
-    };
+    const dateStr = `${getLocalDateString(selectedDate)}T12:00:00.000Z`;
 
-    console.log("Submitting payload:", fullPayload);
-
-    // Call the actual backend openShift API for each shift logged
+    setIsLoading(true);
     try {
-      await Promise.all(
-        payload.map(shift =>
-          openShift({
-            status: "open",
-            date: selectedDate.toISOString(),
-            empleado_id: shift.empleado_id,
-            horas_trabajadas: shift.horas_trabajadas,
-            franjas: shift.franjas
-          })
-        )
+      // 1. Delete employee shifts that are no longer in the form
+      const shiftsToDelete = loadedShifts.filter(
+        (s) => s.empleado_id && s.empleado_id > employeeCount
       );
+      if (shiftsToDelete.length > 0) {
+        await Promise.all(shiftsToDelete.map((s) => deleteShift(s.id)));
+      }
+
+      // 2. Insert or update existing shifts (Upsert)
+      const updatedShifts = await Promise.all(
+        payload.map(async (shift) => {
+          const existingShift = loadedShifts.find(
+            (s) => s.empleado_id === shift.empleado_id
+          );
+          if (existingShift) {
+            return await updateShift(existingShift.id, {
+              status: "open",
+              date: dateStr,
+              empleado_id: shift.empleado_id,
+              horas_trabajadas: shift.horas_trabajadas,
+              franjas: shift.franjas
+            });
+          } else {
+            return await openShift({
+              status: "open",
+              date: dateStr,
+              empleado_id: shift.empleado_id,
+              horas_trabajadas: shift.horas_trabajadas,
+              franjas: shift.franjas
+            });
+          }
+        })
+      );
+
+      // Refresh loaded shifts state
+      setLoadedShifts(updatedShifts);
+
+      setSavedData(true);
+      toast.success(
+        loadedShifts.length > 0
+          ? "Turnos actualizados exitosamente"
+          : "Turnos guardados exitosamente"
+      );
+      setTimeout(() => setSavedData(false), 3000);
     } catch (e) {
       console.error("Failed to save shifts on backend", e);
+      toast.error("Error al guardar los turnos.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setSavedData(true);
-    toast.success("Turno guardado exitosamente");
-    setTimeout(() => setSavedData(false), 3000);
   };
 
   const handleNewShift = () => {
+    setLoadedShifts([]);
     setEmployeeCount(1);
     setEmployeeSlots({ 1: new Set() });
     setActiveEmployee(1);
@@ -237,7 +324,16 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0 lg:min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden pb-0 pt-0 lg:min-h-0 relative">
+        {/* Loading Overlay to block user interaction */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/70 z-30 flex flex-col items-center justify-center backdrop-blur-[1px] transition-all">
+            <div className="flex flex-col items-center gap-3 bg-white/95 px-6 py-5 rounded-xl border border-gray-150 shadow-md">
+              <RefreshCw className="size-8 text-green-700 animate-spin" />
+              <span className="text-sm font-semibold text-gray-700">Cargando datos del turno...</span>
+            </div>
+          </div>
+        )}
         {/* Left Column (Master Panel & Today's Shift Card) */}
         <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-card lg:overflow-hidden p-4 space-y-4 lg:h-full lg:shrink-0 mb-6 lg:mb-0">
           <div ref={counterCardRef} className="rounded-card bg-card p-6 shadow-sm border border-border text-center shrink-0">
@@ -471,11 +567,11 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
           <div className="pt-4 border-t border-border space-y-3 shrink-0 mt-auto">
             <button
               onClick={handleSave}
-              disabled={!isValid}
+              disabled={!isValid || isLoading}
               className={`flex w-full items-center justify-center gap-2 rounded-lg px-6 py-4 font-semibold shadow-md transition-all ${
                 savedData 
                   ? 'bg-success text-success-foreground' 
-                  : !isValid 
+                  : (!isValid || isLoading) 
                     ? 'bg-primary/50 text-primary-foreground/50 cursor-not-allowed opacity-50' 
                     : 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95'
               }`}
@@ -484,10 +580,10 @@ export function ShiftsDashboard({ onNavigate }: ShiftsDashboardProps) {
               {savedData ? (
                 <>
                   <CheckCircle2 className="size-5" />
-                  Turnos guardados exitosamente
+                  {loadedShifts.length > 0 ? "Turnos actualizados exitosamente" : "Turnos guardados exitosamente"}
                 </>
               ) : (
-                "Guardar registro de turnos"
+                loadedShifts.length > 0 ? "Actualizar registro de turnos" : "Guardar registro de turnos"
               )}
             </button>
 

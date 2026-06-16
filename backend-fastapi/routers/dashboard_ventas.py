@@ -16,6 +16,20 @@ def get_sales(date: Optional[str] = None, vendedor: Optional[str] = None, db: Se
     query = db.query(models.Sale)
     if vendedor:
         query = query.filter(models.Sale.vendorName == vendedor)
+        
+        # Filter by active (open) shift for this vendor
+        active_shift = db.query(models.Shift).filter(
+            models.Shift.vendorName == vendedor,
+            models.Shift.status == "open"
+        ).order_by(models.Shift.openedAt.desc()).first()
+        
+        if active_shift:
+            # Only return sales made after the shift was opened
+            query = query.filter(models.Sale.time >= active_shift.openedAt)
+        else:
+            # If no active shift exists, return an empty list for this vendor
+            return []
+            
     if date:
         # func.date extracts the YYYY-MM-DD string part of the datetime column
         query = query.filter(func.date(models.Sale.time) == date)

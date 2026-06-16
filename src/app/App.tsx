@@ -295,6 +295,34 @@ export default function App() {
 
   const isAdmin = globalState.currentVendor.role === "Administrador";
 
+  const resetTransactions = () => {
+    setGlobalState(prev => ({ ...prev, sales: [] }));
+  };
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      resetTransactions();
+      return;
+    }
+
+    async function updateSalesForCurrentVendor() {
+      try {
+        const apiSales = await getSales({
+          vendedor: !isAdmin ? globalState.currentVendor.name : undefined
+        });
+        setGlobalState(prev => ({
+          ...prev,
+          sales: apiSales.map(s => ({ ...s, time: new Date(s.time) })) as any
+        }));
+      } catch (err) {
+        console.error("Failed to refetch sales", err);
+        resetTransactions();
+      }
+    }
+
+    updateSalesForCurrentVendor();
+  }, [isLoggedIn, globalState.currentVendor.id, isAdmin]);
+
   const renderWithA11y = (content: ReactNode) => (
     <>
       <a href="#main-content" className="skip-link">
@@ -333,12 +361,19 @@ export default function App() {
     }
     setIsLoggedIn(false);
     setCurrentScreen("home");
+    resetTransactions();
   };
 
-  const handleChangeVendor = (vendorId: string) => {
+  const handleChangeVendor = async (vendorId: string) => {
     const selectedVendor = globalState.vendors.find(v => v.id === vendorId);
     if (selectedVendor) {
+      try {
+        await login({ id: vendorId });
+      } catch (e) {
+        console.error("Failed to login next vendor on backend", e);
+      }
       setGlobalState(prev => ({ ...prev, currentVendor: selectedVendor }));
+      resetTransactions();
     }
   };
 

@@ -135,6 +135,16 @@ export const openShift = (shift: Omit<ApiShift, "id" | "time" | "total_expected"
 export const closeShift = (id: string, shiftData: Partial<ApiShift>) =>
     apiRequest<ApiShift>(`/turnos/${id}/cerrar`, { method: "PATCH", body: JSON.stringify(shiftData) });
 
+export const getShiftsByDate = (dateStr: string) =>
+    apiRequest<ApiShift[]>(`/turnos/por-fecha?fecha=${dateStr}`);
+
+export const updateShift = (id: string, shift: Omit<ApiShift, "id" | "time"> & Partial<ApiShift>) =>
+    apiRequest<ApiShift>(`/turnos/${id}`, { method: "PUT", body: JSON.stringify(shift) });
+
+export const deleteShift = (id: string) =>
+    apiRequest<{ ok: boolean }>(`/turnos/${id}`, { method: "DELETE" });
+
+
 // 6. Configuración
 export const getDailyGoal = () =>
     apiRequest<ApiDailyGoal>("/configuracion/meta-diaria");

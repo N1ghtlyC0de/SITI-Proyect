@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from datetime import datetime
 from ..database import get_db
 from .. import models, schemas
 
@@ -28,6 +29,32 @@ def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
             detail="Vendor not found"
         )
     
+    # Check if there is an active shift for this vendor. If not, open one.
+    active_shift = db.query(models.Shift).filter(
+        models.Shift.vendorName == vendor.name,
+        models.Shift.status == "open"
+    ).order_by(models.Shift.openedAt.desc()).first()
+    
+    if not active_shift:
+        # Parse numeric employee ID if possible
+        emp_id = 1
+        try:
+            numeric_part = "".join(filter(str.isdigit, vendor.id))
+            if numeric_part:
+                emp_id = int(numeric_part)
+        except Exception:
+            pass
+            
+        active_shift = models.Shift(
+            status="open",
+            vendorName=vendor.name,
+            empleado_id=emp_id,
+            openedAt=datetime.utcnow()
+        )
+        db.add(active_shift)
+        db.commit()
+        db.refresh(active_shift)
+        
     return schemas.LoginResponse(
         success=True,
         vendor=map_vendor_model_to_response(vendor)

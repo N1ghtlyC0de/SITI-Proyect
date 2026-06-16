@@ -102,8 +102,18 @@ export function VendorHome({ sales = [], inventory = [], dailyGoal = 0, currentV
     }
   };
 
-  const handleConfirmCloseShift = (nextVendorId: string | null, note: string) => {
+  const handleConfirmCloseShift = async (nextVendorId: string | null, note: string) => {
     const nextVendor = nextVendorId ? vendors.find(v => v.id === nextVendorId) || null : null;
+    
+    try {
+      await closeShift("current", {
+        status: "closed",
+        note: note,
+        vendorName: currentVendor.name
+      });
+    } catch (e) {
+      console.error("Failed to close shift on backend", e);
+    }
     
     setShowCloseShiftSheet(false);
     setPostShiftData({
