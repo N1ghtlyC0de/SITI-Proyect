@@ -82,3 +82,11 @@ class DailyGoal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     goal = Column(Integer, default=150000)
+
+class Publicacion(Base):
+    __tablename__ = "publicaciones"
+
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String, nullable=False)
+    descripcion = Column(String, nullable=False)
+
