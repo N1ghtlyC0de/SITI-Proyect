@@ -26,14 +26,16 @@ export function ProductCard({
   className = "",
   lowStockThreshold = 10
 }: ProductCardProps) {
-  const outOfStock = stock === 0;
-  const isLowStock = stock <= lowStockThreshold && stock > 0;
+  const currentStock = stock ?? 0;
+  const currentThreshold = lowStockThreshold ?? 10;
+  const outOfStock = currentStock === 0;
+  const isLowStock = currentStock <= currentThreshold && currentStock > 0;
 
   const stockColor = outOfStock
-    ? "text-gray-400"
+    ? "text-destructive font-semibold"
     : isLowStock
-    ? "text-orange-600 font-medium"
-    : "text-gray-500";
+    ? "text-amber-600 font-semibold"
+    : "text-muted-foreground";
 
   return (
     <button
@@ -48,7 +50,7 @@ export function ProductCard({
           ? "opacity-45 cursor-not-allowed"
           : "cursor-pointer hover:shadow-md active:scale-98"
       } ${className}`}
-      aria-label={`${name}, precio ${formatCurrency(price)}, ${stock} unidades disponibles${isInCart ? `, ${cartQuantity} en carrito` : ""}`}
+      aria-label={`${name}, precio ${formatCurrency(price)}, ${currentStock} unidades disponibles${isInCart ? `, ${cartQuantity} en carrito` : ""}`}
       type="button"
     >
       {isInCart && cartQuantity > 0 && (
@@ -73,7 +75,7 @@ export function ProductCard({
       </p>
 
       <p className={`text-xs font-medium ${stockColor}`}>
-        {stock} en stock
+        {currentStock} en stock
       </p>
     </button>
   );

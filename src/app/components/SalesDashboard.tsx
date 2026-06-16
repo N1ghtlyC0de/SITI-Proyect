@@ -110,16 +110,20 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
     const headers = ["Metrica", "Valor Numerico", "Formateado"];
     const csvRows = [
       headers.join(","),
-      ...data.map(row => [
-        `"${row.Metric}"`,
-        row.Value,
-        `"${row.Formatted}"`
-      ].join(","))
+      ...data.map(row => {
+        // Sanitize currency string (replace non-breaking space with normal space)
+        const cleanFormatted = row.Formatted.replace(/\u00A0/g, " ");
+        return [
+          `"${row.Metric}"`,
+          row.Value,
+          `"${cleanFormatted}"`
+        ].join(",");
+      })
     ];
     const csvContent = csvRows.join("\n");
 
-    // Create blob and trigger download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    // Create blob with BOM prepended to fix encoding in Excel, and trigger download
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
@@ -227,10 +231,10 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
 
 
   return (
-    <div className="flex min-h-screen h-auto lg:h-screen lg:overflow-y-auto flex-col bg-muted" style={{ width: "100%" }}>
+    <div className="flex min-h-screen h-auto lg:h-screen lg:overflow-y-auto flex-col bg-muted print:min-h-0 print:h-auto print:overflow-visible print:block print:bg-white" style={{ width: "100%" }}>
       {/* Header */}
       <header
-        className="sticky top-0 z-50 flex-shrink-0 flex items-center justify-between px-4 bg-primary text-primary-foreground shadow-md w-full"
+        className="sticky top-0 z-50 flex-shrink-0 flex items-center justify-between px-4 bg-primary text-primary-foreground shadow-md w-full print:hidden"
         style={{ height: "64px" }}
       >
         {/* Left Section */}
@@ -276,17 +280,19 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
       </header>
 
       {/* Main Dashboard Content Area restricted to viewport and padded */}
-      <div id="sales-dashboard-print-area" className="flex-1 flex flex-col p-4 space-y-3 lg:min-h-0 lg:overflow-y-auto">
+      <div id="sales-dashboard-print-area" className="flex-1 flex flex-col p-4 space-y-3 lg:min-h-0 lg:overflow-y-auto print:min-h-0 print:h-auto print:overflow-visible print:block print:p-0">
         <style dangerouslySetInnerHTML={{__html: `
           @media print {
             body {
               background: white !important;
               color: black !important;
             }
-            body > *:not(#sales-dashboard-print-area) {
-              display: none !important;
+            html, body, #root, main {
+              height: auto !important;
+              min-height: 0 !important;
+              overflow: visible !important;
             }
-            header, nav, footer, button, [role="menu"], [role="dialog"], .bg-primary\\/10 {
+            header, nav, footer, button:not(.print-section-header), [role="menu"], [role="dialog"], .bg-primary\\/10 {
               display: none !important;
             }
             #sales-dashboard-print-area {
@@ -301,9 +307,17 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
             #sales-dashboard-print-area .hidden.lg\\:block {
               display: block !important;
             }
-            .recharts-responsive-container {
-              height: 300px !important;
-              min-height: 300px !important;
+            .ventas-hora-chart {
+              height: 250px !important;
+              min-height: 250px !important;
+            }
+            .productos-chart {
+              height: 160px !important;
+              min-height: 160px !important;
+            }
+            .metodos-pago-chart {
+              height: 160px !important;
+              min-height: 160px !important;
             }
           }
         `}} />
@@ -338,22 +352,22 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
 
 
         {/* Split analytical layout: 2 columns side-by-side on desktop */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:min-h-0 lg:overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:min-h-0 lg:overflow-hidden print:flex-col print:h-auto print:overflow-visible">
           
           {/* Left Column (Trends & Progress) - 50% width on desktop */}
-          <div className="w-full lg:w-1/2 flex flex-col gap-3 lg:h-full lg:overflow-hidden">
+          <div className="w-full lg:w-1/2 flex flex-col gap-3 lg:h-full lg:overflow-hidden print:w-full print:h-auto print:overflow-visible print:gap-2">
             {/* Daily Goal */}
-            <div className="rounded-card bg-card p-4 shadow-sm border border-border shrink-0">
+            <div className="rounded-card bg-card p-4 shadow-sm border border-border shrink-0 print:break-inside-avoid">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Target className="size-5 text-primary" />
-                  <h2 className="font-semibold text-lg text-foreground">Meta de ventas (Ingresos)</h2>
+                  <Target className="size-5 text-primary print:text-black" />
+                  <h2 className="font-semibold text-lg text-foreground print:text-black">Meta de ventas (Ingresos)</h2>
                 </div>
                 <span className="text-xs font-semibold text-primary">{goalPercentage}%</span>
               </div>
-              <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+              <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact]">
                 <div 
-                  className="h-full bg-primary transition-all duration-500"
+                  className="h-full bg-primary transition-all duration-500 print:[print-color-adjust:exact] print:[-webkit-print-color-adjust:exact]"
                   style={{ width: `${goalPercentage}%` }}
                 />
               </div>
@@ -364,26 +378,26 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
             </div>
 
             {/* Ventas por hora Chart */}
-            <div className="flex-1 min-h-0 rounded-card bg-card p-4 shadow-sm border border-border flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 rounded-card bg-card p-4 shadow-sm border border-border flex flex-col overflow-hidden print:break-inside-avoid print:h-auto">
               <button
                 type="button"
                 onClick={() => setIsVentasHoraOpen(!isVentasHoraOpen)}
-                className="w-full flex justify-between items-center text-left mb-3 shrink-0 focus:outline-none lg:pointer-events-none lg:cursor-default"
+                className="w-full flex justify-between items-center text-left mb-3 shrink-0 focus:outline-none lg:pointer-events-none lg:cursor-default print-section-header print:block print:text-black print:mb-4"
                 aria-expanded={isVentasHoraOpen}
               >
-                <h2 className="font-semibold text-lg text-foreground">Ventas por hora</h2>
+                <h2 className="font-semibold text-lg text-foreground print:text-black">Ventas por hora</h2>
                 <ChevronDown
                   className={cn(
-                    "size-5 text-muted-foreground transition-transform duration-200 lg:hidden",
+                    "size-5 text-muted-foreground transition-transform duration-200 lg:hidden print:hidden",
                     isVentasHoraOpen && "rotate-180"
                   )}
                 />
               </button>
               
               <div className={cn("w-full flex-1 min-h-0", isVentasHoraOpen ? "block" : "hidden lg:block")}>
-                <div className="h-64 lg:h-full w-full min-h-0">
+                <div className="h-64 lg:h-full w-full min-h-0 print:w-full print:h-[250px] print:relative print:mt-2 print:mb-2">
                   {isVentasHoraOpen && (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={150}>
+                    <ResponsiveContainer className="ventas-hora-chart" width="100%" height="100%" minHeight={150}>
                       <BarChart data={salesByHour} margin={{ top: 10, right: 10, left: -20, bottom: 35 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                         <XAxis
@@ -420,16 +434,16 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
           </div>
 
           {/* Right Column (Product & Payment Breakdown) - 50% width on desktop */}
-          <div className="w-full lg:w-1/2 flex flex-col gap-3 lg:h-full lg:overflow-hidden">
+          <div className="w-full lg:w-1/2 flex flex-col gap-3 lg:h-full lg:overflow-hidden print:w-full print:h-auto print:overflow-visible print:gap-2">
             {/* Top row: Unified Product breakdown & Pie chart single card */}
-            <div className="rounded-card bg-card p-4 shadow-sm border border-border flex flex-col shrink-0 overflow-hidden">
-              <h2 className="font-semibold text-lg mb-2 shrink-0 text-foreground">Detalle de productos vendidos</h2>
+            <div className="rounded-card bg-card p-4 shadow-sm border border-border flex flex-col shrink-0 overflow-hidden print:break-inside-avoid print:h-auto">
+              <h2 className="font-semibold text-lg mb-2 shrink-0 text-foreground print:text-black">Detalle de productos vendidos</h2>
               
-              <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="flex flex-col md:flex-row items-center gap-6 print:flex-col print:items-center print:gap-2">
                 {/* Left side: Doughnut chart (30-40% width) */}
-                <div className="w-full md:w-1/3 h-[140px] flex items-center justify-center">
+                <div className="w-full md:w-1/3 h-[140px] flex items-center justify-center print:w-full print:max-w-md print:h-40 print:relative print:mt-2 print:mb-2 print:mx-auto">
                   {topProducts.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={140}>
+                    <ResponsiveContainer className="productos-chart" width="100%" height="100%" minHeight={140}>
                       <PieChart>
                         <Pie
                           data={topProducts}
@@ -459,7 +473,7 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
                 </div>
 
                 {/* Right side: Detailed List acting as legend (60-70% width) */}
-                <div className="w-full md:w-2/3">
+                <div className="w-full md:w-2/3 print:w-full">
                   {topProducts.length > 0 ? (
                     <div className="space-y-2 h-auto overflow-visible lg:max-h-[140px] lg:overflow-y-auto pr-1">
                       {topProducts.map((product) => {
@@ -503,17 +517,17 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
             </div>
 
             {/* Payment Methods Section (takes up remaining space) */}
-            <div className="flex-1 min-h-[300px] lg:min-h-[260px] rounded-card bg-card p-3.5 shadow-sm border border-border flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-[300px] lg:min-h-[260px] rounded-card bg-card p-3.5 shadow-sm border border-border flex flex-col overflow-hidden print:break-inside-avoid print:h-auto print:min-h-0">
               <button
                 type="button"
                 onClick={() => setIsMetodosPagoOpen(!isMetodosPagoOpen)}
-                className="w-full flex justify-between items-center text-left mb-2 shrink-0 focus:outline-none lg:pointer-events-none lg:cursor-default"
+                className="w-full flex justify-between items-center text-left mb-2 shrink-0 focus:outline-none lg:pointer-events-none lg:cursor-default print-section-header print:block print:text-black print:mb-4"
                 aria-expanded={isMetodosPagoOpen}
               >
-                <h2 className="font-semibold text-lg text-foreground">Métodos de pago</h2>
+                <h2 className="font-semibold text-lg text-foreground print:text-black">Métodos de pago</h2>
                 <ChevronDown
                   className={cn(
-                    "size-5 text-muted-foreground transition-transform duration-200 lg:hidden",
+                    "size-5 text-muted-foreground transition-transform duration-200 lg:hidden print:hidden",
                     isMetodosPagoOpen && "rotate-180"
                   )}
                 />
@@ -521,13 +535,13 @@ export function SalesDashboard({ sales = [], dailyGoal = 150000, onNavigate }: S
               
               <div className={cn("w-full flex-1 min-h-0", isMetodosPagoOpen ? "block" : "hidden lg:block")}>
                 {sales.length > 0 ? (
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 lg:min-h-0 lg:overflow-y-auto">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 lg:min-h-0 lg:overflow-y-auto print:grid-cols-1 print:overflow-visible print:gap-2">
                     {/* Chart side */}
                     <div className="flex flex-col lg:h-full lg:overflow-hidden">
                       <h3 className="text-sm font-semibold text-muted-foreground mb-1 shrink-0">Pedidos por método</h3>
-                      <div className="h-64 lg:h-full w-full min-h-0">
+                      <div className="h-64 lg:h-full w-full min-h-0 print:w-full print:h-40 print:relative print:mt-2 print:mb-2">
                         {isMetodosPagoOpen && (
-                          <ResponsiveContainer width="100%" height="100%" minHeight={150}>
+                          <ResponsiveContainer className="metodos-pago-chart" width="100%" height="100%" minHeight={150}>
                             <BarChart data={paymentMethodsChart} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                               <XAxis
